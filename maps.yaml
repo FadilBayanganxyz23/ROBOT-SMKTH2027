@@ -1,0 +1,48 @@
+field:
+  width_m: 2.0
+  height_m: 4.0
+  width_cm: 200.0
+  height_cm: 400.0
+  width_mm: 2000.0
+  height_mm: 4000.0
+  scale_px_per_mm: 0.25
+  scale_px_per_cm: 2.5
+  width_px: 500
+  height_px: 1000
+grid:
+  size_cm: 10.0
+  snap_enabled: true
+robot:
+  type: robot
+  name: Robot
+  sides: 6
+  diameter_cm: 30.0
+  x_cm: 100.0
+  y_cm: 50.0
+  rotation_deg: 0.0
+  color: '#e74c3c'
+objects:
+- type: home_box
+  name: Home Area
+  x_cm: 25.0
+  y_cm: 25.0
+  width_cm: 50.0
+  height_cm: 50.0
+  rotation_deg: 0.0
+  color: '#2ecc71'
+- type: stand_cube
+  name: Stand Cube 1
+  x_cm: 80.0
+  y_cm: 150.0
+  width_cm: 30.0
+  height_cm: 30.0
+  rotation_deg: 0.0
+  color: '#e67e22'
+- type: wall
+  name: Tembok 1
+  x_cm: 0.0
+  y_cm: 200.0
+  width_cm: 200.0
+  height_cm: 10.0
+  rotation_deg: 0.0
+  color: '#34495e'
