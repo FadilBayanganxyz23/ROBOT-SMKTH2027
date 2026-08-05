@@ -422,6 +422,17 @@ class RobotItem(BaseFieldItem):
         margin = 350.0
         return QRectF(-r_px - margin, -r_px - margin, 2*r_px + 2*margin, 2*r_px + 2*margin)
 
+    def shape(self) -> QPainterPath:
+        """
+        Define exact mouse interaction / hit-testing boundary for the robot.
+        Matches physical oval body (+ 4px edge) so clicking outside the robot
+        never selects or drags it.
+        """
+        r_px = (self.diameter_cm / 2.0) * self.px_per_cm
+        path = QPainterPath()
+        path.addEllipse(QPointF(0, 0), r_px + 4.0, r_px + 4.0)
+        return path
+
     def get_sensor_readouts(self) -> dict:
         """
         Calculate 2D Raycast distances for all active sensors on the robot against:
