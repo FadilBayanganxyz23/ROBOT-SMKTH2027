@@ -360,9 +360,9 @@ class MainWindow(QMainWindow):
         self.spn_grid_cm.valueChanged.connect(self.on_field_settings_changed)
         grid.addWidget(self.spn_grid_cm, 3, 1)
 
-        # Snap to Grid Checkbox
+        # Snap to Grid Checkbox (Default False for unconstrained free placement anywhere on field)
         self.chk_snap = QCheckBox("Snap to Grid")
-        self.chk_snap.setChecked(True)
+        self.chk_snap.setChecked(False)
         self.chk_snap.toggled.connect(self.on_snap_toggled)
         grid.addWidget(self.chk_snap, 4, 0, 1, 2)
 
@@ -380,54 +380,39 @@ class MainWindow(QMainWindow):
         return box
 
     def build_robot_config_box(self) -> QGroupBox:
-        """Create Robot shape polygon & diameter configuration panel."""
-        box = QGroupBox("🤖 Konfigurasi Robot")
+        """Create Robot diameter & orientation configuration panel (Default Oval Robot)."""
+        box = QGroupBox("🤖 Konfigurasi Robot (Default Oval)")
         grid = QGridLayout(box)
         grid.setSpacing(8)
 
-        # Robot Shape: Number of sides
-        grid.addWidget(QLabel("Jumlah Sisi Polygon:"), 0, 0)
-        self.spn_robot_sides = QSpinBox()
-        self.spn_robot_sides.setRange(3, 36)
-        self.spn_robot_sides.setSingleStep(1)
-        self.spn_robot_sides.setValue(6)  # Default 6-sided hexagon
-        self.spn_robot_sides.setToolTip("3=Segitiga, 4=Persegi, 6=Heksagon, 36=Lingkaran")
-        self.spn_robot_sides.valueChanged.connect(self.on_robot_config_changed)
-        grid.addWidget(self.spn_robot_sides, 0, 1)
-
-        # Shape Name Hint
-        self.lbl_shape_name = QLabel("Bentuk: Hexagon (6 Sisi)")
-        self.lbl_shape_name.setStyleSheet("color: #58a6ff; font-weight: bold;")
-        grid.addWidget(self.lbl_shape_name, 1, 0, 1, 2)
-
         # Robot Diameter (cm)
-        grid.addWidget(QLabel("Diameter Robot (cm):"), 2, 0)
+        grid.addWidget(QLabel("Diameter Robot (cm):"), 0, 0)
         self.spn_robot_diam = QDoubleSpinBox()
         self.spn_robot_diam.setRange(5.0, 200.0)
         self.spn_robot_diam.setSingleStep(5.0)
         self.spn_robot_diam.setValue(30.0)
         self.spn_robot_diam.valueChanged.connect(self.on_robot_config_changed)
-        grid.addWidget(self.spn_robot_diam, 2, 1)
+        grid.addWidget(self.spn_robot_diam, 0, 1)
 
         # Robot Orientation Angle (deg)
-        grid.addWidget(QLabel("Sudut Orientasi (°):"), 3, 0)
+        grid.addWidget(QLabel("Sudut Orientasi (°):"), 1, 0)
         self.spn_robot_rot = QDoubleSpinBox()
         self.spn_robot_rot.setRange(0.0, 360.0)
         self.spn_robot_rot.setSingleStep(5.0)
         self.spn_robot_rot.setValue(0.0)
         self.spn_robot_rot.valueChanged.connect(self.on_robot_rot_changed)
-        grid.addWidget(self.spn_robot_rot, 3, 1)
+        grid.addWidget(self.spn_robot_rot, 1, 1)
 
         # Robot Color Button
-        grid.addWidget(QLabel("Warna Robot:"), 4, 0)
+        grid.addWidget(QLabel("Warna Robot:"), 2, 0)
         self.btn_robot_color = QPushButton("🎨 Pilih Warna")
         self.btn_robot_color.clicked.connect(self.choose_robot_color)
-        grid.addWidget(self.btn_robot_color, 4, 1)
+        grid.addWidget(self.btn_robot_color, 2, 1)
 
         # Robot Live Position Readout
         self.lbl_robot_pos = QLabel("Posisi: X = 100 cm, Y = 50 cm")
         self.lbl_robot_pos.setObjectName("highlightVal")
-        grid.addWidget(self.lbl_robot_pos, 5, 0, 1, 2)
+        grid.addWidget(self.lbl_robot_pos, 3, 0, 1, 2)
 
         return box
 
@@ -535,7 +520,6 @@ class MainWindow(QMainWindow):
         self.robot_item = RobotItem(
             x_cm=100.0,
             y_cm=50.0,
-            sides=self.spn_robot_sides.value(),
             diameter_cm=self.spn_robot_diam.value(),
             px_per_cm=self.scene.px_per_cm
         )
@@ -604,29 +588,9 @@ class MainWindow(QMainWindow):
         )
 
     def on_robot_config_changed(self):
-        sides = self.spn_robot_sides.value()
         diam = self.spn_robot_diam.value()
-
-        # Update shape label hint
-        if sides == 3:
-            s_name = "Segitiga (3 Sisi)"
-        elif sides == 4:
-            s_name = "Persegi (4 Sisi)"
-        elif sides == 5:
-            s_name = "Pentagon (5 Sisi)"
-        elif sides == 6:
-            s_name = "Heksagon (6 Sisi)"
-        elif sides == 8:
-            s_name = "Oktagon (8 Sisi)"
-        elif sides >= 30:
-            s_name = "Lingkaran (Smooth Circle)"
-        else:
-            s_name = f"Polygon ({sides} Sisi)"
-
-        self.lbl_shape_name.setText(f"Bentuk: {s_name}")
-
         if self.robot_item:
-            self.robot_item.set_shape_params(sides, diam)
+            self.robot_item.set_shape_params(diameter_cm=diam)
             self.scene.update()
 
     def on_robot_rot_changed(self):
@@ -638,8 +602,7 @@ class MainWindow(QMainWindow):
             color = QColorDialog.getColor(self.robot_item.item_color, self, "Pilih Warna Robot")
             if color.isValid():
                 self.robot_item.set_shape_params(
-                    self.spn_robot_sides.value(),
-                    self.spn_robot_diam.value(),
+                    diameter_cm=self.spn_robot_diam.value(),
                     color=color.name()
                 )
 
@@ -925,12 +888,10 @@ class MainWindow(QMainWindow):
         # Load Robot
         r_cfg = data.get('robot', {})
         if r_cfg:
-            self.spn_robot_sides.setValue(r_cfg.get('sides', 6))
             self.spn_robot_diam.setValue(r_cfg.get('diameter_cm', 30.0))
             self.robot_item = RobotItem(
                 x_cm=r_cfg.get('x_cm', 100.0),
                 y_cm=r_cfg.get('y_cm', 50.0),
-                sides=r_cfg.get('sides', 6),
                 diameter_cm=r_cfg.get('diameter_cm', 30.0),
                 px_per_cm=self.scene.px_per_cm,
                 color=r_cfg.get('color', '#e74c3c')

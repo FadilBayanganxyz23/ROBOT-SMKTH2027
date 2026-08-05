@@ -82,7 +82,6 @@ def test_map_export_import():
     assert loaded['field']['height_m'] == 4.0
     assert loaded['field']['width_px'] == 500
     assert loaded['field']['height_px'] == 1000
-    assert loaded['robot']['sides'] == 6
     assert loaded['robot']['diameter_cm'] == 30.0
     assert len(loaded['objects']) == 3
 

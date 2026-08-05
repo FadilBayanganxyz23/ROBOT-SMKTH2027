@@ -91,8 +91,7 @@ class BaseFieldItem(QGraphicsItem):
             'y_cm': round(self.get_y_cm(), 2),
             'width_cm': round(self.width_cm, 2),
             'height_cm': round(self.height_cm, 2),
-            'rotation_deg': round(self.rotation(), 2),
-            'color': self.item_color.name()
+            'rotation_deg': round(self.rotation(), 2)
         }
 
 
@@ -290,29 +289,27 @@ class LineItem(RectFieldItem):
 
 class RobotItem(BaseFieldItem):
     """
-    Robot Item with configurable N-polygon sides and diameter.
+    Robot Item rendered as Oval / Ellipse shape.
     Moves interactively on field with heading direction indicator.
     Rendered on top of all field objects (ZValue = 100.0).
     """
     def __init__(self, x_cm: float = 100.0, y_cm: float = 50.0,
-                 sides: int = 6, diameter_cm: float = 30.0,
-                 px_per_cm: float = 2.5, color: str = "#e74c3c"):
-        self.sides = max(3, sides)
+                 diameter_cm: float = 30.0, px_per_cm: float = 2.5,
+                 color: str = "#e74c3c", **kwargs):
         self.diameter_cm = max(5.0, diameter_cm)
         super().__init__(
             item_type="robot",
             name="Robot",
             x_cm=x_cm,
             y_cm=y_cm,
-            width_cm=diameter_cm,
-            height_cm=diameter_cm,
+            width_cm=self.diameter_cm,
+            height_cm=self.diameter_cm,
             px_per_cm=px_per_cm,
             color=color
         )
         self.setZValue(100.0)  # Always stay on top of all other objects
 
-    def set_shape_params(self, sides: int, diameter_cm: float, color: str = None):
-        self.sides = max(3, sides)
+    def set_shape_params(self, diameter_cm: float, color: str = None):
         self.diameter_cm = max(5.0, diameter_cm)
         self.width_cm = self.diameter_cm
         self.height_cm = self.diameter_cm
@@ -331,19 +328,9 @@ class RobotItem(BaseFieldItem):
 
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Generate N-sided regular polygon vertices
-        polygon = QPolygonF()
-        num_sides = self.sides
-        # If N >= 30, render as smooth circle
-        if num_sides >= 30:
-            path = QPainterPath()
-            path.addEllipse(QPointF(0, 0), r_px, r_px)
-        else:
-            for i in range(num_sides):
-                angle = (2.0 * math.pi * i / num_sides) - (math.pi / 2.0)
-                px = r_px * math.cos(angle)
-                py = r_px * math.sin(angle)
-                polygon.append(QPointF(px, py))
+        # Render Default Oval / Ellipse Robot Body
+        path = QPainterPath()
+        path.addEllipse(QPointF(0, 0), r_px, r_px)
 
         # Body Brush & Pen
         fill_color = QColor(self.item_color)
@@ -354,11 +341,7 @@ class RobotItem(BaseFieldItem):
 
         painter.setPen(QPen(pen_color, pen_width))
         painter.setBrush(QBrush(fill_color))
-
-        if num_sides >= 30:
-            painter.drawPath(path)
-        else:
-            painter.drawPolygon(polygon)
+        painter.drawPath(path)
 
         # Heading Direction Arrow (points forward towards 0 deg / top)
         arrow_len = r_px * 0.85
@@ -381,7 +364,11 @@ class RobotItem(BaseFieldItem):
         painter.drawEllipse(QPointF(0, 0), 3.5, 3.5)
 
     def to_dict(self) -> dict:
-        d = super().to_dict()
-        d['sides'] = self.sides
-        d['diameter_cm'] = round(self.diameter_cm, 2)
-        return d
+        return {
+            'type': self.item_type,
+            'name': self.name,
+            'x_cm': round(self.get_x_cm(), 2),
+            'y_cm': round(self.get_y_cm(), 2),
+            'diameter_cm': round(self.diameter_cm, 2),
+            'rotation_deg': round(self.rotation(), 2)
+        }

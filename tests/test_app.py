@@ -50,12 +50,10 @@ def test_gui_and_yaml():
     assert 'robot' in types
     print("✅ Test 3 Passed: All layout items added successfully.")
 
-    # 4. Test robot configuration update (Hexagon to Octagon to Circle)
-    window.spn_robot_sides.setValue(8)
+    # 4. Test robot configuration update (Oval diameter)
     window.spn_robot_diam.setValue(45.0)
-    assert window.robot_item.sides == 8
     assert window.robot_item.diameter_cm == 45.0
-    print("✅ Test 4 Passed: Robot polygon (8-sides) & diameter (45cm) updated.")
+    print("✅ Test 4 Passed: Robot Oval diameter (45cm) updated.")
 
     # 5. Test export to maps.yaml
     test_yaml_path = "test_maps.yaml"
@@ -70,7 +68,6 @@ def test_gui_and_yaml():
     assert imported_data['field']['height_m'] == 4.0
     assert imported_data['field']['width_px'] == 500
     assert imported_data['field']['height_px'] == 1000
-    assert imported_data['robot']['sides'] == 8
     assert imported_data['robot']['diameter_cm'] == 45.0
     print("✅ Test 6 Passed: maps.yaml imported and validated successfully.")
 
