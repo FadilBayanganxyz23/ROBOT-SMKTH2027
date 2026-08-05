@@ -352,8 +352,8 @@ class LineItem(RectFieldItem):
 
 class RobotItem(BaseFieldItem):
     """
-    Robot Item rendered as Oval / Ellipse shape.
-    Moves interactively on field with heading direction indicator.
+    Robot Item rendered as Oval / Ellipse shape with 7 Sensor Mount Positions.
+    Moves interactively on field with heading direction indicator and sensor visualization.
     Rendered on top of all field objects (ZValue = 100.0).
     """
     def __init__(self, x_cm: float = 100.0, y_cm: float = 50.0,
@@ -372,6 +372,26 @@ class RobotItem(BaseFieldItem):
         )
         self.setZValue(100.0)  # Always stay on top of all other objects
 
+        # 7 Sensor Mount Positions: 'none', 'ultrasonic', 'infrared'
+        self.sensors = {
+            'front_left': 'none',
+            'front_center': 'none',
+            'front_right': 'none',
+            'left_rear': 'none',
+            'back_left': 'none',
+            'back_right': 'none',
+            'right_rear': 'none'
+        }
+        if 'sensors' in kwargs and isinstance(kwargs['sensors'], dict):
+            self.set_sensors(kwargs['sensors'])
+
+    def set_sensors(self, sensors_dict: dict):
+        if sensors_dict:
+            for k in self.sensors:
+                if k in sensors_dict:
+                    self.sensors[k] = sensors_dict[k]
+        self.update()
+
     def set_shape_params(self, diameter_cm: float, color: str = None):
         self.diameter_cm = max(5.0, diameter_cm)
         self.width_cm = self.diameter_cm
@@ -383,7 +403,7 @@ class RobotItem(BaseFieldItem):
 
     def boundingRect(self) -> QRectF:
         r_px = (self.diameter_cm / 2.0) * self.px_per_cm
-        margin = 10.0
+        margin = 40.0
         return QRectF(-r_px - margin, -r_px - margin, 2*r_px + 2*margin, 2*r_px + 2*margin)
 
     def paint(self, painter: QPainter, option, widget=None):
@@ -391,11 +411,10 @@ class RobotItem(BaseFieldItem):
 
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Render Default Oval / Ellipse Robot Body
+        # 1. Render Default Oval / Ellipse Robot Body
         path = QPainterPath()
         path.addEllipse(QPointF(0, 0), r_px, r_px)
 
-        # Body Brush & Pen
         fill_color = QColor(self.item_color)
         fill_color.setAlpha(220)
 
@@ -406,7 +425,79 @@ class RobotItem(BaseFieldItem):
         painter.setBrush(QBrush(fill_color))
         painter.drawPath(path)
 
-        # Heading Direction Arrow (points forward towards 0 deg / top)
+        # 2. Render 7 Sensors on Robot Boundary
+        sensor_angles = {
+            'front_left': -35.0,
+            'front_center': 0.0,
+            'front_right': 35.0,
+            'right_rear': 120.0,
+            'back_right': 160.0,
+            'back_left': -160.0,
+            'left_rear': -120.0
+        }
+
+        for pos_key, angle_deg in sensor_angles.items():
+            stype = self.sensors.get(pos_key, 'none')
+            rad = math.radians(angle_deg - 90.0)
+            xs = r_px * math.cos(rad)
+            ys = r_px * math.sin(rad)
+
+            painter.save()
+            painter.translate(xs, ys)
+            painter.rotate(angle_deg)
+
+            if stype == 'ultrasonic':
+                # --- Ultrasonic Sensor (Cyan Dual-Cylinder Module + Beam Cone) ---
+                beam_path = QPainterPath()
+                beam_path.moveTo(0, 0)
+                beam_path.lineTo(-12, -35)
+                beam_path.lineTo(12, -35)
+                beam_path.closeSubpath()
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QBrush(QColor(0, 206, 201, 55)))
+                painter.drawPath(beam_path)
+
+                mod_rect = QRectF(-10, -6, 20, 10)
+                painter.setPen(QPen(QColor("#008080"), 1.2))
+                painter.setBrush(QBrush(QColor("#00cec9")))
+                painter.drawRoundedRect(mod_rect, 2, 2)
+
+                painter.setPen(QPen(QColor("#2d3436"), 1))
+                painter.setBrush(QBrush(QColor("#dfe6e9")))
+                painter.drawEllipse(QPointF(-4.5, -3), 3.0, 3.0)
+                painter.drawEllipse(QPointF(4.5, -3), 3.0, 3.0)
+
+            elif stype == 'infrared':
+                # --- Infrared Sensor (Red IR Module + Narrow Beam Ray) ---
+                beam_path = QPainterPath()
+                beam_path.moveTo(0, 0)
+                beam_path.lineTo(-5, -30)
+                beam_path.lineTo(5, -30)
+                beam_path.closeSubpath()
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QBrush(QColor(255, 107, 107, 65)))
+                painter.drawPath(beam_path)
+
+                mod_rect = QRectF(-8, -5, 16, 9)
+                painter.setPen(QPen(QColor("#900c3f"), 1.2))
+                painter.setBrush(QBrush(QColor("#ff4757")))
+                painter.drawRoundedRect(mod_rect, 2, 2)
+
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QBrush(QColor("#2ed573")))
+                painter.drawEllipse(QPointF(-3, -2.5), 2.2, 2.2)
+                painter.setBrush(QBrush(QColor("#2f3542")))
+                painter.drawEllipse(QPointF(3, -2.5), 2.2, 2.2)
+
+            else:
+                # --- Empty Slot Mount Indicator (Subtle Gray Dot/Slot) ---
+                painter.setPen(QPen(QColor(255, 255, 255, 140), 1.0, Qt.PenStyle.DotLine))
+                painter.setBrush(QBrush(QColor(0, 0, 0, 90)))
+                painter.drawEllipse(QPointF(0, 0), 2.5, 2.5)
+
+            painter.restore()
+
+        # 3. Heading Direction Arrow (points forward towards 0 deg / top)
         arrow_len = r_px * 0.85
         arrow_pen = QPen(QColor("#f1c40f"), 3.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
         painter.setPen(arrow_pen)
@@ -433,5 +524,6 @@ class RobotItem(BaseFieldItem):
             'x_cm': round(self.get_x_cm(), 2),
             'y_cm': round(self.get_y_cm(), 2),
             'diameter_cm': round(self.diameter_cm, 2),
-            'rotation_deg': round(self.rotation(), 2)
+            'rotation_deg': round(self.rotation(), 2),
+            'sensors': self.sensors.copy()
         }

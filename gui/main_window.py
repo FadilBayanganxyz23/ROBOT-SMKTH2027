@@ -414,7 +414,43 @@ class MainWindow(QMainWindow):
         self.lbl_robot_pos.setObjectName("highlightVal")
         grid.addWidget(self.lbl_robot_pos, 3, 0, 1, 2)
 
+        # --- 7 Sensor Mount Positions Panel ---
+        lbl_sensors_title = QLabel("📡 Konfigurasi 7 Sensor Robot:")
+        lbl_sensors_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 6px;")
+        grid.addWidget(lbl_sensors_title, 4, 0, 1, 2)
+
+        self.sensor_combos = {}
+        sensor_list = [
+            ('front_left', 'Depan Kiri:'),
+            ('front_center', 'Depan Tengah:'),
+            ('front_right', 'Depan Kanan:'),
+            ('left_rear', 'Kiri Belakang:'),
+            ('back_left', 'Belakang Kiri:'),
+            ('back_right', 'Belakang Kanan:'),
+            ('right_rear', 'Kanan Belakang:')
+        ]
+
+        sensor_options = ["❌ Tidak Dipasang", "📡 Ultrasonic (US)", "🔴 Infrared (IR)"]
+
+        row = 5
+        for pos_key, pos_label in sensor_list:
+            grid.addWidget(QLabel(pos_label), row, 0)
+            cb = QComboBox()
+            cb.addItems(sensor_options)
+            cb.setCurrentIndex(0)  # Default 'none'
+            cb.currentIndexChanged.connect(lambda idx, k=pos_key: self.on_sensor_changed(k, idx))
+            grid.addWidget(cb, row, 1)
+            self.sensor_combos[pos_key] = cb
+            row += 1
+
         return box
+
+    def on_sensor_changed(self, pos_key: str, index: int):
+        stypes = ['none', 'ultrasonic', 'infrared']
+        stype = stypes[index] if 0 <= index < len(stypes) else 'none'
+        if self.robot_item:
+            self.robot_item.sensors[pos_key] = stype
+            self.robot_item.update()
 
     def build_inspector_box(self) -> QGroupBox:
         """Create Selected Item Property Inspector panel."""
@@ -883,17 +919,27 @@ class MainWindow(QMainWindow):
         r_cfg = data.get('robot', {})
         if r_cfg:
             self.spn_robot_diam.setValue(r_cfg.get('diameter_cm', 30.0))
+            sensors_cfg = r_cfg.get('sensors', {})
             self.robot_item = RobotItem(
                 x_cm=r_cfg.get('x_cm', 100.0),
                 y_cm=r_cfg.get('y_cm', 50.0),
                 diameter_cm=r_cfg.get('diameter_cm', 30.0),
                 px_per_cm=self.scene.px_per_cm,
-                color=r_cfg.get('color', '#e74c3c')
+                color=r_cfg.get('color', '#e74c3c'),
+                sensors=sensors_cfg
             )
             self.robot_item.setRotation(r_cfg.get('rotation_deg', 0.0))
             self.connect_item_signals(self.robot_item)
             self.scene.addItem(self.robot_item)
             self.spn_robot_rot.setValue(r_cfg.get('rotation_deg', 0.0))
+
+            # Update UI dropdowns
+            stype_map = {'none': 0, 'ultrasonic': 1, 'infrared': 2}
+            for pos_key, combo in self.sensor_combos.items():
+                stype = sensors_cfg.get(pos_key, 'none')
+                combo.blockSignals(True)
+                combo.setCurrentIndex(stype_map.get(stype, 0))
+                combo.blockSignals(False)
 
         # Load Objects
         for obj in data.get('objects', []):
