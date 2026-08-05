@@ -576,19 +576,104 @@ class RobotItem(BaseFieldItem):
 
         return readouts
 
+    def check_safety_collision(self) -> bool:
+        """
+        Check if the robot's safety clearance zone intersects any physical obstacle
+        (Wall, Stand Cube, Cabinet, or Outer Field Boundary Walls).
+        Returns True if collision / safety distance violation occurs.
+        """
+        if self.safety_margin_cm <= 0 or not self.scene():
+            return False
+
+        r_safe_cm = (self.diameter_cm / 2.0) + self.safety_margin_cm
+        rob_x_cm = self.get_x_cm()
+        rob_y_cm = self.get_y_cm()
+
+        # 1. Check against Field Outer Boundary Walls
+        scene = self.scene()
+        if hasattr(scene, 'field_width_m') and hasattr(scene, 'field_height_m'):
+            field_w_cm = scene.field_width_m * 100.0
+            field_h_cm = scene.field_height_m * 100.0
+
+            if (rob_x_cm - r_safe_cm <= 0 or rob_x_cm + r_safe_cm >= field_w_cm or
+                rob_y_cm - r_safe_cm <= 0 or rob_y_cm + r_safe_cm >= field_h_cm):
+                return True
+
+        # 2. Check against Field Items (Wall, StandCube, Cabinet)
+        for item in scene.items():
+            if item is self or not getattr(item, 'isVisible', lambda: False)():
+                continue
+
+            itype = getattr(item, 'item_type', '')
+            if itype not in ['wall', 'stand_cube', 'cabinet']:
+                continue
+
+            w_cm = getattr(item, 'width_cm', 0.0)
+            h_cm = getattr(item, 'height_cm', 0.0)
+            ix_cm = getattr(item, 'get_x_cm', lambda: 0.0)()
+            iy_cm = getattr(item, 'get_y_cm', lambda: 0.0)()
+            rot_deg = getattr(item, 'rotation', lambda: 0.0)()
+
+            corners_local = [
+                (-w_cm / 2.0, -h_cm / 2.0),
+                ( w_cm / 2.0, -h_cm / 2.0),
+                ( w_cm / 2.0,  h_cm / 2.0),
+                (-w_cm / 2.0,  h_cm / 2.0)
+            ]
+            rot_rad = math.radians(rot_deg)
+            cos_r = math.cos(rot_rad)
+            sin_r = math.sin(rot_rad)
+
+            world_corners = []
+            for (lx, ly) in corners_local:
+                wx = ix_cm + (lx * cos_r - ly * sin_r)
+                wy = iy_cm + (lx * sin_r + ly * cos_r)
+                world_corners.append((wx, wy))
+
+            for i in range(4):
+                p1 = world_corners[i]
+                p2 = world_corners[(i + 1) % 4]
+                dx = p2[0] - p1[0]
+                dy = p2[1] - p1[1]
+                if dx == 0 and dy == 0:
+                    dist = math.hypot(rob_x_cm - p1[0], rob_y_cm - p1[1])
+                else:
+                    t = ((rob_x_cm - p1[0]) * dx + (rob_y_cm - p1[1]) * dy) / (dx * dx + dy * dy)
+                    t = max(0.0, min(1.0, t))
+                    cx = p1[0] + t * dx
+                    cy = p1[1] + t * dy
+                    dist = math.hypot(rob_x_cm - cx, rob_y_cm - cy)
+
+                if dist <= r_safe_cm:
+                    return True
+
+        return False
+
     def paint(self, painter: QPainter, option, widget=None):
         r_px = (self.diameter_cm / 2.0) * self.px_per_cm
 
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # 0. Render Safety Clearance Oval Zone (Translucent Glowing Ring around Robot Body)
+        # 0. Render Safety Clearance Oval Zone (Green when Safe, Red when Warning/Collision)
         if self.safety_margin_cm > 0:
+            is_collision = self.check_safety_collision()
+
             safe_r_px = (self.diameter_cm / 2.0 + self.safety_margin_cm) * self.px_per_cm
             safe_path = QPainterPath()
             safe_path.addEllipse(QPointF(0, 0), safe_r_px, safe_r_px)
 
-            safe_pen = QPen(QColor("#2ecc71"), 1.8, Qt.PenStyle.DashLine)
-            safe_fill = QColor(46, 204, 113, 35)
+            if is_collision:
+                safe_pen = QPen(QColor("#ff4757"), 2.2, Qt.PenStyle.DashLine)
+                safe_fill = QColor(255, 71, 87, 55)
+                text_color = QColor("#ff4757")
+                status_txt = f"⚠️ BAHAYA: {self.safety_margin_cm:.1f}cm"
+                badge_w = 110.0
+            else:
+                safe_pen = QPen(QColor("#2ecc71"), 1.8, Qt.PenStyle.DashLine)
+                safe_fill = QColor(46, 204, 113, 35)
+                text_color = QColor("#2ecc71")
+                status_txt = f"Aman: {self.safety_margin_cm:.1f}cm"
+                badge_w = 85.0
 
             painter.setPen(safe_pen)
             painter.setBrush(QBrush(safe_fill))
@@ -596,10 +681,10 @@ class RobotItem(BaseFieldItem):
 
             # Safety Zone Distance Badge at Bottom of Ring
             painter.setFont(QFont("Consolas", 8, QFont.Weight.Bold))
-            lbl_rect = QRectF(-45.0, safe_r_px + 3.0, 90.0, 14.0)
-            painter.fillRect(lbl_rect, QColor(0, 0, 0, 160))
-            painter.setPen(QPen(QColor("#2ecc71")))
-            painter.drawText(lbl_rect, Qt.AlignmentFlag.AlignCenter, f"Aman: {self.safety_margin_cm:.1f}cm")
+            lbl_rect = QRectF(-badge_w / 2.0, safe_r_px + 3.0, badge_w, 14.0)
+            painter.fillRect(lbl_rect, QColor(0, 0, 0, 180))
+            painter.setPen(QPen(text_color))
+            painter.drawText(lbl_rect, Qt.AlignmentFlag.AlignCenter, status_txt)
 
         # 1. Render Default Oval / Ellipse Robot Body
         path = QPainterPath()
