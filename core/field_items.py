@@ -594,11 +594,11 @@ class RobotItem(BaseFieldItem):
                 {'pos_angle': -45.0,  'wheel_rot': -135.0}
             ]
         else:
-            # 3-Omni Drive: Left (-90° facing UP), Top-Right (+30° facing 120°), Bottom-Right (+150° facing 240°)
+            # 3-Omni Drive: 2 wheels in front (Front-Left -60°, Front-Right +60°) & 1 wheel at back (Back-Center 180°)
             wheels_setup = [
-                {'pos_angle': -90.0, 'wheel_rot': 0.0},
-                {'pos_angle': 30.0,   'wheel_rot': 120.0},
-                {'pos_angle': 150.0,  'wheel_rot': 240.0}
+                {'pos_angle': -60.0, 'wheel_rot': -30.0},  # Front-Left
+                {'pos_angle': 60.0,  'wheel_rot': 30.0},   # Front-Right
+                {'pos_angle': 180.0, 'wheel_rot': 90.0}    # Back-Center
             ]
 
         for w_info in wheels_setup:
