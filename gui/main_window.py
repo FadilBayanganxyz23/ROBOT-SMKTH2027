@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
         super().keyPressEvent(event)
 
     def init_stylesheet(self):
-        """Apply modern dark-theme stylesheet."""
+        """Apply modern dark-theme stylesheet with comprehensive widget styling."""
         dark_style = """
         QMainWindow {
             background-color: #0d1117;
@@ -96,31 +96,40 @@ class MainWindow(QMainWindow):
             font-size: 13px;
             color: #c9d1d9;
         }
+
+        /* ── Group Boxes ── */
         QGroupBox {
             font-weight: bold;
+            font-size: 12px;
             border: 1px solid #30363d;
-            border-radius: 6px;
-            margin-top: 10px;
-            padding-top: 12px;
+            border-radius: 8px;
+            margin-top: 14px;
+            padding: 14px 10px 10px 10px;
             background-color: #161b22;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
             subcontrol-position: top left;
-            padding: 2px 8px;
+            padding: 3px 10px;
             color: #58a6ff;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            font-size: 12px;
         }
+
+        /* ── Buttons ── */
         QPushButton {
             background-color: #21262d;
             border: 1px solid #30363d;
-            border-radius: 5px;
-            padding: 6px 12px;
+            border-radius: 6px;
+            padding: 7px 14px;
             color: #c9d1d9;
             font-weight: 500;
         }
         QPushButton:hover {
             background-color: #30363d;
-            border-color: #8b949e;
+            border-color: #58a6ff;
         }
         QPushButton:pressed {
             background-color: #1f6feb;
@@ -134,6 +143,7 @@ class MainWindow(QMainWindow):
         }
         QPushButton#primaryBtn:hover {
             background-color: #2ea043;
+            border-color: #3fb950;
         }
         QPushButton#dangerBtn {
             background-color: #da3633;
@@ -143,16 +153,65 @@ class MainWindow(QMainWindow):
         QPushButton#dangerBtn:hover {
             background-color: #f85149;
         }
+
+        /* ── Spin Boxes & Combo Boxes ── */
         QDoubleSpinBox, QSpinBox, QComboBox {
             background-color: #0d1117;
             border: 1px solid #30363d;
-            border-radius: 4px;
-            padding: 4px 8px;
+            border-radius: 5px;
+            padding: 5px 8px;
             color: #c9d1d9;
+            min-height: 20px;
         }
         QDoubleSpinBox:focus, QSpinBox:focus, QComboBox:focus {
             border-color: #58a6ff;
         }
+        QDoubleSpinBox::up-button, QSpinBox::up-button {
+            subcontrol-origin: border;
+            subcontrol-position: top right;
+            width: 20px;
+            border-left: 1px solid #30363d;
+            background-color: #21262d;
+            border-top-right-radius: 4px;
+        }
+        QDoubleSpinBox::down-button, QSpinBox::down-button {
+            subcontrol-origin: border;
+            subcontrol-position: bottom right;
+            width: 20px;
+            border-left: 1px solid #30363d;
+            background-color: #21262d;
+            border-bottom-right-radius: 4px;
+        }
+        QDoubleSpinBox::up-button:hover, QSpinBox::up-button:hover,
+        QDoubleSpinBox::down-button:hover, QSpinBox::down-button:hover {
+            background-color: #30363d;
+        }
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: top right;
+            width: 24px;
+            border-left: 1px solid #30363d;
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+            background-color: #21262d;
+        }
+        QComboBox::down-arrow {
+            image: none;
+            width: 0; height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #8b949e;
+        }
+        QComboBox QAbstractItemView {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            selection-background-color: #1f6feb;
+            selection-color: #ffffff;
+            padding: 4px;
+        }
+
+        /* ── Labels ── */
         QLabel {
             color: #8b949e;
         }
@@ -160,16 +219,124 @@ class MainWindow(QMainWindow):
             color: #58a6ff;
             font-weight: bold;
         }
+        QLabel#sectionHeader {
+            color: #58a6ff;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 2px 0px;
+        }
+
+        /* ── Checkbox ── */
+        QCheckBox {
+            spacing: 8px;
+            color: #c9d1d9;
+        }
+        QCheckBox::indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 1px solid #30363d;
+            background-color: #0d1117;
+        }
+        QCheckBox::indicator:checked {
+            background-color: #238636;
+            border-color: #2ea043;
+        }
+        QCheckBox::indicator:hover {
+            border-color: #58a6ff;
+        }
+
+        /* ── Toolbar ── */
         QToolBar {
             background-color: #161b22;
             border-bottom: 1px solid #30363d;
-            spacing: 6px;
-            padding: 4px;
+            spacing: 2px;
+            padding: 3px 6px;
         }
+        QToolBar QToolButton {
+            background-color: transparent;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            padding: 5px 10px;
+            color: #c9d1d9;
+            font-size: 12px;
+        }
+        QToolBar QToolButton:hover {
+            background-color: #21262d;
+            border-color: #30363d;
+        }
+        QToolBar QToolButton:pressed {
+            background-color: #1f6feb;
+            color: #ffffff;
+        }
+        QToolBar::separator {
+            width: 1px;
+            background-color: #30363d;
+            margin: 4px 6px;
+        }
+
+        /* ── Status Bar ── */
         QStatusBar {
             background-color: #161b22;
             border-top: 1px solid #30363d;
             color: #8b949e;
+            font-size: 12px;
+            padding: 2px 6px;
+        }
+        QStatusBar QLabel {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 11px;
+            color: #8b949e;
+            padding: 0 4px;
+        }
+
+        /* ── Scroll Bars ── */
+        QScrollBar:vertical {
+            background: #0d1117;
+            width: 8px;
+            border: none;
+        }
+        QScrollBar::handle:vertical {
+            background: #30363d;
+            min-height: 30px;
+            border-radius: 4px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: #484f58;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0;
+        }
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+            background: none;
+        }
+        QScrollBar:horizontal {
+            background: #0d1117;
+            height: 8px;
+            border: none;
+        }
+        QScrollBar::handle:horizontal {
+            background: #30363d;
+            min-width: 30px;
+            border-radius: 4px;
+        }
+        QScrollBar::handle:horizontal:hover {
+            background: #484f58;
+        }
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+            width: 0;
+        }
+        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+            background: none;
+        }
+
+        /* ── Splitter ── */
+        QSplitter::handle {
+            background-color: #21262d;
+            width: 2px;
+        }
+        QSplitter::handle:hover {
+            background-color: #58a6ff;
         }
         """
         self.setStyleSheet(dark_style)
@@ -263,9 +430,12 @@ class MainWindow(QMainWindow):
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
         right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(10)
+        right_layout.setSpacing(6)
 
-        right_layout.addWidget(self.build_robot_config_box())
+        right_layout.addWidget(self.build_robot_main_box())
+        right_layout.addWidget(self.build_robot_wheels_box())
+        right_layout.addWidget(self.build_robot_sensors_box())
+        right_layout.addWidget(self.build_robot_actions_box())
         right_layout.addWidget(self.build_field_settings_box())
         right_layout.addStretch()
 
@@ -288,51 +458,45 @@ class MainWindow(QMainWindow):
         """Create Palette sidebar for adding items to field."""
         box = QGroupBox("➕ Tambah Objek Lapangan")
         layout = QVBoxLayout(box)
-        layout.setSpacing(8)
+        layout.setSpacing(5)
+        layout.setContentsMargins(8, 8, 8, 8)
 
-        # Add Home Box (50x50 cm)
-        btn_home = QPushButton("🟢 Home Box (50x50 cm)")
-        btn_home.setStyleSheet("text-align: left; padding: 8px;")
-        btn_home.clicked.connect(self.add_home_box)
-        layout.addWidget(btn_home)
+        palette_items = [
+            ("🟢  Home Box (50x50 cm)", "#2ecc71", self.add_home_box),
+            ("🟧  Stand Cube (15x15 cm)", "#e67e22", self.add_stand_cube),
+            ("🧱  Tembok (Lebar 2 cm)", "#7f8c8d", self.add_wall),
+            ("📏  Garis (Lebar 2 cm)", "#3498db", self.add_line),
+            ("🗄️  Lemari (15x45 cm)", "#9b59b6", self.add_cabinet),
+        ]
 
-        # Add Stand Cube (15x15 cm with 15x2 cm vertical solatif line)
-        btn_cube = QPushButton("🟧 Stand Cube (15x15 cm)")
-        btn_cube.setStyleSheet("text-align: left; padding: 8px;")
-        btn_cube.clicked.connect(self.add_stand_cube)
-        layout.addWidget(btn_cube)
+        for label, accent_color, handler in palette_items:
+            btn = QPushButton(label)
+            btn.setStyleSheet(
+                f"text-align: left; padding: 8px 12px; border-left: 3px solid {accent_color};"
+            )
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(handler)
+            layout.addWidget(btn)
 
-        # Add Wall / Tembok (Lebar 2cm, Rotasi & Panjang dapat disesuaikan)
-        btn_wall = QPushButton("🧱 Tembok (Lebar 2 cm)")
-        btn_wall.setStyleSheet("text-align: left; padding: 8px;")
-        btn_wall.clicked.connect(self.add_wall)
-        layout.addWidget(btn_wall)
+        # Visual separator
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet("background-color: #30363d; max-height: 1px; margin: 4px 0;")
+        layout.addWidget(sep)
 
-        # Add Line / Garis (Lebar 2cm, Rotasi & Panjang dapat disesuaikan)
-        btn_line = QPushButton("📏 Garis (Lebar 2 cm)")
-        btn_line.setStyleSheet("text-align: left; padding: 8px;")
-        btn_line.clicked.connect(self.add_line)
-        layout.addWidget(btn_line)
-
-        # Add Cabinet / Lemari (15x45 cm)
-        btn_cabinet = QPushButton("🗄️ Lemari (15x45 cm)")
-        btn_cabinet.setStyleSheet("text-align: left; padding: 8px;")
-        btn_cabinet.clicked.connect(self.add_cabinet)
-        layout.addWidget(btn_cabinet)
-
-        layout.addSpacing(10)
-        lbl_hint = QLabel("💡 Petunjuk:\nKlik tombol di atas untuk membuat objek baru. Objek dapat di-drag & diputar di lapangan.")
+        lbl_hint = QLabel("💡 Klik tombol di atas untuk menambah objek.\nObjek dapat di-drag & diputar.")
         lbl_hint.setWordWrap(True)
-        lbl_hint.setStyleSheet("color: #8b949e; font-size: 11px; font-style: italic;")
+        lbl_hint.setStyleSheet("color: #6e7681; font-size: 11px; font-style: italic; padding: 2px 4px;")
         layout.addWidget(lbl_hint)
 
         return box
 
     def build_field_settings_box(self) -> QGroupBox:
         """Create Field dimensions & pixel conversion scale panel."""
-        box = QGroupBox("⚙️ Dimensi & Konversi Pixel")
+        box = QGroupBox("📐 Dimensi & Konversi Pixel")
         grid = QGridLayout(box)
-        grid.setSpacing(8)
+        grid.setSpacing(6)
+        grid.setContentsMargins(10, 10, 10, 10)
 
         # Field Width (meters)
         grid.addWidget(QLabel("Lebar Lapangan (m):"), 0, 0)
@@ -390,14 +554,15 @@ class MainWindow(QMainWindow):
         self.update_pixel_conversion_labels()
         return box
 
-    def build_robot_config_box(self) -> QGroupBox:
-        """Create Robot diameter & orientation configuration panel (Default Oval Robot)."""
-        box = QGroupBox("🤖 Konfigurasi Robot (Default Oval)")
+    def build_robot_main_box(self) -> QGroupBox:
+        """Create Robot main configuration panel: diameter, safety margin, orientation, color, position."""
+        box = QGroupBox("🤖 Robot Utama")
         grid = QGridLayout(box)
-        grid.setSpacing(8)
+        grid.setSpacing(6)
+        grid.setContentsMargins(10, 10, 10, 10)
 
-        # Robot Diameter (cm)
-        grid.addWidget(QLabel("Diameter Robot (cm):"), 0, 0)
+        # Row 0: Diameter
+        grid.addWidget(QLabel("Diameter (cm):"), 0, 0)
         self.spn_robot_diam = QDoubleSpinBox()
         self.spn_robot_diam.setRange(5.0, 200.0)
         self.spn_robot_diam.setSingleStep(5.0)
@@ -405,8 +570,8 @@ class MainWindow(QMainWindow):
         self.spn_robot_diam.valueChanged.connect(self.on_robot_config_changed)
         grid.addWidget(self.spn_robot_diam, 0, 1)
 
-        # Robot Safety Clearance Margin (cm)
-        grid.addWidget(QLabel("Jarak Aman Robot (cm):"), 1, 0)
+        # Row 1: Safety Margin
+        grid.addWidget(QLabel("Jarak Aman (cm):"), 1, 0)
         self.spn_robot_safety_margin = QDoubleSpinBox()
         self.spn_robot_safety_margin.setRange(0.0, 100.0)
         self.spn_robot_safety_margin.setSingleStep(1.0)
@@ -414,8 +579,8 @@ class MainWindow(QMainWindow):
         self.spn_robot_safety_margin.valueChanged.connect(self.on_safety_margin_changed)
         grid.addWidget(self.spn_robot_safety_margin, 1, 1)
 
-        # Robot Orientation Angle (deg)
-        grid.addWidget(QLabel("Sudut Orientasi (°):"), 2, 0)
+        # Row 2: Orientation
+        grid.addWidget(QLabel("Orientasi (°):"), 2, 0)
         self.spn_robot_rot = QDoubleSpinBox()
         self.spn_robot_rot.setRange(0.0, 360.0)
         self.spn_robot_rot.setSingleStep(5.0)
@@ -423,68 +588,83 @@ class MainWindow(QMainWindow):
         self.spn_robot_rot.valueChanged.connect(self.on_robot_rot_changed)
         grid.addWidget(self.spn_robot_rot, 2, 1)
 
-        # Robot Color Button
-        grid.addWidget(QLabel("Warna Robot:"), 3, 0)
+        # Row 3: Color Picker
+        grid.addWidget(QLabel("Warna:"), 3, 0)
         self.btn_robot_color = QPushButton("🎨 Pilih Warna")
+        self.btn_robot_color.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_robot_color.clicked.connect(self.choose_robot_color)
         grid.addWidget(self.btn_robot_color, 3, 1)
 
-        # Robot Live Position Readout
+        # Row 4: Live Position Readout
         self.lbl_robot_pos = QLabel("Posisi: X = 100 cm, Y = 50 cm")
-        self.lbl_robot_pos.setObjectName("highlightVal")
+        self.lbl_robot_pos.setStyleSheet(
+            "color: #58a6ff; font-size: 11px; font-weight: bold; "
+            "background-color: #0d1117; border: 1px solid #30363d; "
+            "border-radius: 4px; padding: 5px 8px;"
+        )
         grid.addWidget(self.lbl_robot_pos, 4, 0, 1, 2)
 
-        # --- Omni Wheel Configuration Panel ---
-        lbl_wheels_title = QLabel("⚙️ Konfigurasi Roda Omni Robot:")
-        lbl_wheels_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 6px;")
-        grid.addWidget(lbl_wheels_title, 4, 0, 1, 2)
+        return box
 
-        # Omni Wheel Mode (4 Omni vs 3 Omni)
-        grid.addWidget(QLabel("Mode Roda Omni:"), 5, 0)
+    def build_robot_wheels_box(self) -> QGroupBox:
+        """Create Omni Wheel configuration panel: mode (3/4) and diameter (50mm/100mm)."""
+        box = QGroupBox("⚙️ Roda Omni")
+        grid = QGridLayout(box)
+        grid.setSpacing(6)
+        grid.setContentsMargins(10, 10, 10, 10)
+
+        # Row 0: Wheel Mode
+        grid.addWidget(QLabel("Mode Roda:"), 0, 0)
         self.cb_wheel_mode = QComboBox()
         self.cb_wheel_mode.addItems([
-            "⚙️ 4 Roda Omni (4-Omni Drive)",
-            "⚙️ 3 Roda Omni (3-Omni Drive)"
+            "4 Roda Omni (4-Omni)",
+            "3 Roda Omni (3-Omni)"
         ])
         self.cb_wheel_mode.currentIndexChanged.connect(self.on_wheel_config_changed)
-        grid.addWidget(self.cb_wheel_mode, 5, 1)
+        grid.addWidget(self.cb_wheel_mode, 0, 1)
 
-        # Omni Wheel Diameter (100mm vs 50mm)
-        grid.addWidget(QLabel("Diameter Roda:"), 6, 0)
+        # Row 1: Wheel Diameter
+        grid.addWidget(QLabel("Diameter Roda:"), 1, 0)
         self.cb_wheel_diam = QComboBox()
         self.cb_wheel_diam.addItems([
-            "⭕ 100 mm (10 cm)",
-            "⭕ 50 mm (5 cm)"
+            "100 mm (10 cm)",
+            "50 mm (5 cm)"
         ])
         self.cb_wheel_diam.currentIndexChanged.connect(self.on_wheel_config_changed)
-        grid.addWidget(self.cb_wheel_diam, 6, 1)
+        grid.addWidget(self.cb_wheel_diam, 1, 1)
 
-        # --- Simplified 9 Sensor Configuration Panel ---
-        lbl_sensors_title = QLabel("📡 Konfigurasi Sensor Robot:")
-        lbl_sensors_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 8px;")
-        grid.addWidget(lbl_sensors_title, 7, 0, 1, 2)
+        return box
 
-        # Dropdown 1: Select Sensor Position
-        grid.addWidget(QLabel("Pilih Posisi Sensor:"), 8, 0)
+    def build_robot_sensors_box(self) -> QGroupBox:
+        """Create 9-Sensor configuration panel with grouped readout display by side."""
+        box = QGroupBox("📡 Sensor Robot")
+        layout = QVBoxLayout(box)
+        layout.setSpacing(4)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        # --- Sensor Position & Type Selector ---
+        selector_grid = QGridLayout()
+        selector_grid.setSpacing(6)
+
+        selector_grid.addWidget(QLabel("Posisi Sensor:"), 0, 0)
         self.cb_sensor_pos = QComboBox()
         self.sensor_pos_keys = [
-            ('front_left', '📍 Depan Kiri'),
-            ('front_center', '📍 Depan Tengah'),
-            ('front_right', '📍 Depan Kanan'),
-            ('left_front', '📍 Kiri Depan'),
-            ('left_rear', '📍 Kiri Belakang'),
-            ('back_left', '📍 Belakang Kiri'),
-            ('back_right', '📍 Belakang Kanan'),
-            ('right_rear', '📍 Kanan Belakang'),
-            ('right_front', '📍 Kanan Depan')
+            ('front_left', 'Depan Kiri'),
+            ('front_center', 'Depan Tengah'),
+            ('front_right', 'Depan Kanan'),
+            ('left_front', 'Kiri Depan'),
+            ('left_rear', 'Kiri Belakang'),
+            ('back_left', 'Belakang Kiri'),
+            ('back_right', 'Belakang Kanan'),
+            ('right_rear', 'Kanan Belakang'),
+            ('right_front', 'Kanan Depan')
         ]
         for key, label_str in self.sensor_pos_keys:
             self.cb_sensor_pos.addItem(label_str, userData=key)
         self.cb_sensor_pos.currentIndexChanged.connect(self.on_sensor_pos_changed)
-        grid.addWidget(self.cb_sensor_pos, 8, 1)
+        selector_grid.addWidget(self.cb_sensor_pos, 0, 1)
 
-        # Dropdown 2: Select Installed Sensor Type
-        grid.addWidget(QLabel("Pasang Sensor:"), 9, 0)
+        selector_grid.addWidget(QLabel("Tipe Sensor:"), 1, 0)
         self.cb_sensor_type = QComboBox()
         self.cb_sensor_type.addItems([
             "❌ Tidak Dipasang",
@@ -492,39 +672,84 @@ class MainWindow(QMainWindow):
             "🔴 Infrared (IR)"
         ])
         self.cb_sensor_type.currentIndexChanged.connect(self.on_sensor_type_changed)
-        grid.addWidget(self.cb_sensor_type, 9, 1)
+        selector_grid.addWidget(self.cb_sensor_type, 1, 1)
+        layout.addLayout(selector_grid)
 
-        # Live Sensor Status & Readout Summary
-        lbl_summary_title = QLabel("📊 Status & Hasil Ukur Sensor:")
-        lbl_summary_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 8px;")
-        grid.addWidget(lbl_summary_title, 10, 0, 1, 2)
+        # --- Visual Separator ---
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet("background-color: #30363d; max-height: 1px; margin: 6px 0;")
+        layout.addWidget(sep)
+
+        # --- Grouped Sensor Readout Summary ---
+        lbl_title = QLabel("📊 Status & Hasil Ukur:")
+        lbl_title.setObjectName("sectionHeader")
+        layout.addWidget(lbl_title)
 
         self.sensor_summary_labels = {}
-        st_layout = QVBoxLayout()
-        st_layout.setSpacing(3)
 
-        for key, label_str in self.sensor_pos_keys:
-            lbl = QLabel(f"{label_str}: Nonaktif")
-            lbl.setStyleSheet("color: #8b949e; font-size: 11px;")
-            st_layout.addWidget(lbl)
-            self.sensor_summary_labels[key] = (label_str, lbl)
+        sensor_groups = [
+            ("▸ DEPAN", [
+                ('front_left', 'Kiri'),
+                ('front_center', 'Tengah'),
+                ('front_right', 'Kanan'),
+            ]),
+            ("▸ KIRI", [
+                ('left_front', 'Depan'),
+                ('left_rear', 'Belakang'),
+            ]),
+            ("▸ KANAN", [
+                ('right_front', 'Depan'),
+                ('right_rear', 'Belakang'),
+            ]),
+            ("▸ BELAKANG", [
+                ('back_left', 'Kiri'),
+                ('back_right', 'Kanan'),
+            ]),
+        ]
 
-        grid.addLayout(st_layout, 11, 0, 1, 2)
+        for group_title, sensors in sensor_groups:
+            grp_lbl = QLabel(group_title)
+            grp_lbl.setStyleSheet(
+                "color: #e6edf3; font-weight: bold; font-size: 11px; "
+                "margin-top: 3px; padding: 0;"
+            )
+            layout.addWidget(grp_lbl)
 
-        # Robot YAML Export & Import Action Buttons
-        btn_robot_save = QPushButton("💾 Simpan Robot (YAML)")
-        btn_robot_save.setStyleSheet("background-color: #238636; color: white; font-weight: bold; padding: 6px; border-radius: 4px;")
+            for key, short_name in sensors:
+                full_label = short_name
+                for pk, pl in self.sensor_pos_keys:
+                    if pk == key:
+                        full_label = pl
+                        break
+                lbl = QLabel(f"   {short_name}: Nonaktif")
+                lbl.setStyleSheet("color: #484f58; font-size: 11px; padding-left: 12px;")
+                layout.addWidget(lbl)
+                self.sensor_summary_labels[key] = (full_label, lbl)
+
+        return box
+
+    def build_robot_actions_box(self) -> QGroupBox:
+        """Create Robot YAML Save/Load action buttons panel."""
+        box = QGroupBox("💾 Simpan / Buka Robot")
+        layout = QHBoxLayout(box)
+        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        btn_robot_save = QPushButton("💾 Simpan Robot")
+        btn_robot_save.setObjectName("primaryBtn")
+        btn_robot_save.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_robot_save.clicked.connect(self.export_robot_yaml)
+        layout.addWidget(btn_robot_save)
 
-        btn_robot_load = QPushButton("📂 Buka Robot (YAML)")
-        btn_robot_load.setStyleSheet("background-color: #1f6beb; color: white; font-weight: bold; padding: 6px; border-radius: 4px;")
+        btn_robot_load = QPushButton("📂 Buka Robot")
+        btn_robot_load.setStyleSheet(
+            "background-color: #1f6feb; color: white; font-weight: bold; "
+            "padding: 7px 14px; border-radius: 6px; border: 1px solid #388bfd;"
+        )
+        btn_robot_load.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_robot_load.clicked.connect(self.import_robot_yaml)
-
-        btn_row = QHBoxLayout()
-        btn_row.setSpacing(6)
-        btn_row.addWidget(btn_robot_save)
-        btn_row.addWidget(btn_robot_load)
-        grid.addLayout(btn_row, 12, 0, 1, 2)
+        layout.addWidget(btn_robot_load)
 
         return box
 
@@ -645,29 +870,40 @@ class MainWindow(QMainWindow):
         self.update_sensor_readouts_ui()
 
     def update_sensor_readouts_ui(self):
-        """Update live sensor distance readouts in sidebar panel."""
+        """Update live sensor distance readouts in grouped sidebar panel."""
         if not hasattr(self, 'robot_item') or not self.robot_item:
             return
         readouts = self.robot_item.get_sensor_readouts()
+
+        # Short names matching the grouped display
+        short_names = {
+            'front_left': 'Kiri', 'front_center': 'Tengah', 'front_right': 'Kanan',
+            'left_front': 'Depan', 'left_rear': 'Belakang',
+            'right_front': 'Depan', 'right_rear': 'Belakang',
+            'back_left': 'Kiri', 'back_right': 'Kanan',
+        }
+
         for pos_key, (name_str, lbl) in self.sensor_summary_labels.items():
             info = readouts.get(pos_key, {})
             stype = info.get('type', 'none')
+            short = short_names.get(pos_key, name_str)
             if stype == 'none':
-                lbl.setText(f"{name_str}: Nonaktif")
-                lbl.setStyleSheet("color: #8b949e; font-size: 11px;")
+                lbl.setText(f"   {short}: Nonaktif")
+                lbl.setStyleSheet("color: #484f58; font-size: 11px; padding-left: 12px;")
             else:
                 dist = info.get('distance_cm', 0.0)
                 target = info.get('target_name', 'Batas')
-                icon = "📡 US" if stype == 'ultrasonic' else "🔴 IR"
-                color_code = "#00cec9" if stype == 'ultrasonic' else "#ff4757"
-                lbl.setText(f"{name_str} [{icon}]: <b>{dist:.1f} cm</b> ({target})")
-                lbl.setStyleSheet(f"color: {color_code}; font-size: 11px;")
+                tag = "US" if stype == 'ultrasonic' else "IR"
+                color = "#00cec9" if stype == 'ultrasonic' else "#ff6b6b"
+                lbl.setText(f"   {short} [{tag}]: {dist:.1f} cm \u2192 {target}")
+                lbl.setStyleSheet(f"color: {color}; font-size: 11px; font-weight: bold; padding-left: 12px;")
 
     def build_inspector_box(self) -> QGroupBox:
         """Create Selected Item Property Inspector panel."""
         box = QGroupBox("🔍 Inspektur Objek Terpilih")
         grid = QGridLayout(box)
-        grid.setSpacing(8)
+        grid.setSpacing(6)
+        grid.setContentsMargins(10, 10, 10, 10)
 
         self.lbl_insp_name = QLabel("Tidak ada objek dipilih")
         self.lbl_insp_name.setStyleSheet("font-weight: bold; color: #58a6ff;")
@@ -742,15 +978,20 @@ class MainWindow(QMainWindow):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
 
-        self.lbl_status_mouse = QLabel("Kursor: X = 0.0 cm, Y = 0.0 cm")
+        self.lbl_status_mouse = QLabel("Kursor: X = 0.0 cm | Y = 0.0 cm")
         self.lbl_status_grid = QLabel("1 Grid = 10.0 cm")
         self.lbl_status_scale = QLabel("Skala: 1 mm = 0.25 px")
 
-        self.statusbar.addPermanentWidget(self.lbl_status_grid)
-        self.statusbar.addPermanentWidget(QLabel(" | "))
-        self.statusbar.addPermanentWidget(self.lbl_status_scale)
-        self.statusbar.addPermanentWidget(QLabel(" | "))
+        sep_style = "color: #30363d; font-size: 11px;"
+        sep1 = QLabel("│")
+        sep1.setStyleSheet(sep_style)
+        sep2 = QLabel("│")
+        sep2.setStyleSheet(sep_style)
+
         self.statusbar.addWidget(self.lbl_status_mouse)
+        self.statusbar.addPermanentWidget(self.lbl_status_grid)
+        self.statusbar.addPermanentWidget(sep1)
+        self.statusbar.addPermanentWidget(self.lbl_status_scale)
 
     def init_default_items(self):
         """Initialize default field setup: Home box and Robot."""
