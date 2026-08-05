@@ -219,7 +219,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(act_export_img)
 
     def init_ui(self):
-        """Construct main layout with left sidebar, central viewport, and right panel."""
+        """Construct main layout with left control sidebar and main field viewport."""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
@@ -229,47 +229,38 @@ class MainWindow(QMainWindow):
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
-        # --- LEFT SIDEBAR: Object Palette ---
+        # --- LEFT SIDEBAR: Control, Inspector & Palette Panel ---
+        left_scroll = QScrollArea()
+        left_scroll.setWidgetResizable(True)
+        left_scroll.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
-        left_layout.addWidget(self.build_palette_box())
-        left_layout.addStretch()
-        left_widget.setFixedWidth(210)
+        left_layout.setSpacing(10)
 
-        # --- CENTER VIEWPORT: Field Scene & View ---
+        left_layout.addWidget(self.build_palette_box())
+        left_layout.addWidget(self.build_inspector_box())
+        left_layout.addWidget(self.build_robot_config_box())
+        left_layout.addWidget(self.build_field_settings_box())
+        left_layout.addStretch()
+
+        left_scroll.setWidget(left_widget)
+        left_scroll.setFixedWidth(340)
+
+        # --- CENTER / RIGHT VIEWPORT: Field Scene & View ---
         center_widget = QWidget()
         center_layout = QVBoxLayout(center_widget)
         center_layout.setContentsMargins(0, 0, 0, 0)
         center_layout.addWidget(self.view)
 
-        # --- RIGHT SIDEBAR: Control & Inspector Panel ---
-        right_scroll = QScrollArea()
-        right_scroll.setWidgetResizable(True)
-        right_scroll.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
-
-        right_widget = QWidget()
-        right_layout = QVBoxLayout(right_widget)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(10)
-
-        right_layout.addWidget(self.build_field_settings_box())
-        right_layout.addWidget(self.build_robot_config_box())
-        right_layout.addWidget(self.build_inspector_box())
-        right_layout.addStretch()
-
-        right_scroll.setWidget(right_widget)
-        right_scroll.setFixedWidth(330)
-
-        # Add to splitter
-        splitter.addWidget(left_widget)
+        # Add to splitter (Left Sidebar + Center Canvas)
+        splitter.addWidget(left_scroll)
         splitter.addWidget(center_widget)
-        splitter.addWidget(right_scroll)
 
         # Set stretch factors (Center view gets max space)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
-        splitter.setStretchFactor(2, 0)
 
         main_layout.addWidget(splitter)
 
