@@ -377,10 +377,10 @@ class RobotItem(BaseFieldItem):
         'left_front':   {'rel_x': -1.0, 'rel_y': -0.5, 'angle': -90.0}
     }
 
-    # 2 Line Sensors: mounted at front center, facing downward to detect floor lines
+    # 2 Line Sensors: mounted directly under the front distance sensors (front_left and front_right), facing downward
     LINE_SENSOR_CONFIGS = {
-        'line_left':  {'rel_x': -0.25, 'rel_y': -0.85},
-        'line_right': {'rel_x':  0.25, 'rel_y': -0.85},
+        'line_left':  {'rel_x': -0.6, 'rel_y': -0.85},
+        'line_right': {'rel_x':  0.6, 'rel_y': -0.85},
     }
 
     def __init__(self, x_cm: float = 100.0, y_cm: float = 50.0,

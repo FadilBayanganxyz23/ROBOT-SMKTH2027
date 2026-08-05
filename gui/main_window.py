@@ -737,7 +737,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(6)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        lbl_desc = QLabel("2 Sensor Garis di Depan-Tengah (Opsional):")
+        lbl_desc = QLabel("2 Sensor Garis di Bawah Sensor Depan (Opsional):")
         lbl_desc.setStyleSheet("color: #8b949e; font-size: 11px;")
         layout.addWidget(lbl_desc)
 
