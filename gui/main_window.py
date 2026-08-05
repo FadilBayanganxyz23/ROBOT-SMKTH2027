@@ -405,25 +405,34 @@ class MainWindow(QMainWindow):
         self.spn_robot_diam.valueChanged.connect(self.on_robot_config_changed)
         grid.addWidget(self.spn_robot_diam, 0, 1)
 
+        # Robot Safety Clearance Margin (cm)
+        grid.addWidget(QLabel("Jarak Aman Robot (cm):"), 1, 0)
+        self.spn_robot_safety_margin = QDoubleSpinBox()
+        self.spn_robot_safety_margin.setRange(0.0, 100.0)
+        self.spn_robot_safety_margin.setSingleStep(1.0)
+        self.spn_robot_safety_margin.setValue(5.0)
+        self.spn_robot_safety_margin.valueChanged.connect(self.on_safety_margin_changed)
+        grid.addWidget(self.spn_robot_safety_margin, 1, 1)
+
         # Robot Orientation Angle (deg)
-        grid.addWidget(QLabel("Sudut Orientasi (°):"), 1, 0)
+        grid.addWidget(QLabel("Sudut Orientasi (°):"), 2, 0)
         self.spn_robot_rot = QDoubleSpinBox()
         self.spn_robot_rot.setRange(0.0, 360.0)
         self.spn_robot_rot.setSingleStep(5.0)
         self.spn_robot_rot.setValue(0.0)
         self.spn_robot_rot.valueChanged.connect(self.on_robot_rot_changed)
-        grid.addWidget(self.spn_robot_rot, 1, 1)
+        grid.addWidget(self.spn_robot_rot, 2, 1)
 
         # Robot Color Button
-        grid.addWidget(QLabel("Warna Robot:"), 2, 0)
+        grid.addWidget(QLabel("Warna Robot:"), 3, 0)
         self.btn_robot_color = QPushButton("🎨 Pilih Warna")
         self.btn_robot_color.clicked.connect(self.choose_robot_color)
-        grid.addWidget(self.btn_robot_color, 2, 1)
+        grid.addWidget(self.btn_robot_color, 3, 1)
 
         # Robot Live Position Readout
         self.lbl_robot_pos = QLabel("Posisi: X = 100 cm, Y = 50 cm")
         self.lbl_robot_pos.setObjectName("highlightVal")
-        grid.addWidget(self.lbl_robot_pos, 3, 0, 1, 2)
+        grid.addWidget(self.lbl_robot_pos, 4, 0, 1, 2)
 
         # --- Omni Wheel Configuration Panel ---
         lbl_wheels_title = QLabel("⚙️ Konfigurasi Roda Omni Robot:")
@@ -519,6 +528,12 @@ class MainWindow(QMainWindow):
 
         return box
 
+    def on_safety_margin_changed(self, value: float):
+        """Triggered when user changes robot safety clearance margin."""
+        if hasattr(self, 'robot_item') and self.robot_item:
+            self.robot_item.set_safety_margin(value)
+            self.scene.update()
+
     def on_wheel_config_changed(self):
         """Triggered when user changes Omni wheel mode or wheel diameter."""
         if not hasattr(self, 'robot_item') or not self.robot_item:
@@ -571,12 +586,15 @@ class MainWindow(QMainWindow):
                     w_cfg = r_cfg.get('wheels', {})
                     w_count = w_cfg.get('count', 4)
                     w_diam = w_cfg.get('diameter_mm', 100)
+                    safety_m = r_cfg.get('safety_margin_cm', 5.0)
                     x_cm = r_cfg.get('x_cm', self.robot_item.get_x_cm())
                     y_cm = r_cfg.get('y_cm', self.robot_item.get_y_cm())
 
                     self.spn_robot_diam.setValue(diam)
                     self.spn_robot_rot.setValue(rot)
+                    self.spn_robot_safety_margin.setValue(safety_m)
                     self.robot_item.set_shape_params(diameter_cm=diam)
+                    self.robot_item.set_safety_margin(safety_m)
                     self.robot_item.set_cm_pos(x_cm, y_cm)
                     self.robot_item.setRotation(rot)
                     self.robot_item.set_sensors(sensors_cfg)
@@ -1121,11 +1139,13 @@ class MainWindow(QMainWindow):
             wheels_cfg = r_cfg.get('wheels', {})
             w_count = wheels_cfg.get('count', 4)
             w_diam = wheels_cfg.get('diameter_mm', 100)
+            safety_m = r_cfg.get('safety_margin_cm', 5.0)
 
             self.robot_item = RobotItem(
                 x_cm=r_cfg.get('x_cm', 100.0),
                 y_cm=r_cfg.get('y_cm', 50.0),
                 diameter_cm=r_cfg.get('diameter_cm', 30.0),
+                safety_margin_cm=safety_m,
                 px_per_cm=self.scene.px_per_cm,
                 color=r_cfg.get('color', '#e74c3c'),
                 sensors=sensors_cfg,
@@ -1135,6 +1155,7 @@ class MainWindow(QMainWindow):
             self.connect_item_signals(self.robot_item)
             self.scene.addItem(self.robot_item)
             self.spn_robot_rot.setValue(r_cfg.get('rotation_deg', 0.0))
+            self.spn_robot_safety_margin.setValue(safety_m)
 
             # Update UI dropdowns & live readouts
             self.cb_wheel_mode.blockSignals(True)

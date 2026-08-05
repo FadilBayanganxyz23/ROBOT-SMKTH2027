@@ -417,6 +417,9 @@ class RobotItem(BaseFieldItem):
             self.wheel_count = 4
             self.wheel_diameter_mm = 100
 
+        # Safety Clearance Margin (cm)
+        self.safety_margin_cm = max(0.0, float(kwargs.get('safety_margin_cm', 5.0)))
+
     def set_sensors(self, sensors_dict: dict):
         if sensors_dict:
             for k in self.sensors:
@@ -427,6 +430,11 @@ class RobotItem(BaseFieldItem):
     def set_wheel_config(self, count: int, diameter_mm: int):
         self.wheel_count = 4 if count == 4 else 3
         self.wheel_diameter_mm = 100 if diameter_mm == 100 else 50
+        self.prepareGeometryChange()
+        self.update()
+
+    def set_safety_margin(self, margin_cm: float):
+        self.safety_margin_cm = max(0.0, margin_cm)
         self.prepareGeometryChange()
         self.update()
 
@@ -572,6 +580,26 @@ class RobotItem(BaseFieldItem):
         r_px = (self.diameter_cm / 2.0) * self.px_per_cm
 
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # 0. Render Safety Clearance Oval Zone (Translucent Glowing Ring around Robot Body)
+        if self.safety_margin_cm > 0:
+            safe_r_px = (self.diameter_cm / 2.0 + self.safety_margin_cm) * self.px_per_cm
+            safe_path = QPainterPath()
+            safe_path.addEllipse(QPointF(0, 0), safe_r_px, safe_r_px)
+
+            safe_pen = QPen(QColor("#2ecc71"), 1.8, Qt.PenStyle.DashLine)
+            safe_fill = QColor(46, 204, 113, 35)
+
+            painter.setPen(safe_pen)
+            painter.setBrush(QBrush(safe_fill))
+            painter.drawPath(safe_path)
+
+            # Safety Zone Distance Badge at Bottom of Ring
+            painter.setFont(QFont("Consolas", 8, QFont.Weight.Bold))
+            lbl_rect = QRectF(-45.0, safe_r_px + 3.0, 90.0, 14.0)
+            painter.fillRect(lbl_rect, QColor(0, 0, 0, 160))
+            painter.setPen(QPen(QColor("#2ecc71")))
+            painter.drawText(lbl_rect, Qt.AlignmentFlag.AlignCenter, f"Aman: {self.safety_margin_cm:.1f}cm")
 
         # 1. Render Default Oval / Ellipse Robot Body
         path = QPainterPath()
@@ -782,6 +810,7 @@ class RobotItem(BaseFieldItem):
             'x_cm': round(self.get_x_cm(), 2),
             'y_cm': round(self.get_y_cm(), 2),
             'diameter_cm': round(self.diameter_cm, 2),
+            'safety_margin_cm': round(self.safety_margin_cm, 2),
             'rotation_deg': round(self.rotation(), 2),
             'wheels': {
                 'count': self.wheel_count,
