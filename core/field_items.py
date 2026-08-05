@@ -127,9 +127,15 @@ class RectFieldItem(BaseFieldItem):
             pen_color = QColor(self.item_color).lighter(130) if not self.isSelected() else QColor("#f1c40f")
             pen_width = 2.0 if not self.isSelected() else 3.5
 
-        painter.setPen(QPen(pen_color, pen_width))
+        pen = QPen(pen_color, pen_width)
+        pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
+        painter.setPen(pen)
         painter.setBrush(QBrush(fill_color))
-        painter.drawRoundedRect(rect, 3.0, 3.0)
+
+        if self.item_type in ("wall", "line"):
+            painter.drawRect(rect)  # Sharp-cornered rectangle for wall and line
+        else:
+            painter.drawRoundedRect(rect, 3.0, 3.0)
 
         # Internal hatch or accents depending on item type
         if self.item_type == "home_box":
