@@ -607,14 +607,7 @@ class MainWindow(QMainWindow):
                 )
 
     def on_item_moved(self, item: BaseFieldItem):
-        # Snap position if snap enabled (Robot, Stand Cube, & Cabinet move freely without grid snapping)
-        is_free_item = (item == self.robot_item) or (getattr(item, 'item_type', '') in ('stand_cube', 'cabinet'))
-        if self.scene.snap_enabled and not is_free_item:
-            pt = item.pos()
-            snapped = self.scene.snap_point(pt)
-            if pt != snapped:
-                item.setPos(snapped)
-
+        # All objects move 100% freely without grid snapping (unconstrained free movement)
         if item == self.robot_item:
             self.update_robot_pos_label()
         
