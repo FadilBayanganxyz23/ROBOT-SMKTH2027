@@ -580,43 +580,68 @@ class RobotItem(BaseFieldItem):
         painter.setBrush(QBrush(fill_color))
         painter.drawPath(path)
 
-        # 1.5. Render Omni Wheels (3 or 4 Omni Wheels on Robot Perimeter)
+        # 1.5. Render Omni Wheels (4-Omni or 3-Omni Drive Calibration matching user references)
         w_diam_cm = self.wheel_diameter_mm / 10.0  # 10 cm or 5 cm
         w_len_px = w_diam_cm * self.px_per_cm
-        w_width_px = max(4.0, w_len_px * 0.38)
+        w_width_px = max(4.0, w_len_px * 0.4)
 
-        wheel_angles = [45.0, 135.0, -135.0, -45.0] if self.wheel_count == 4 else [0.0, 120.0, -120.0]
+        if self.wheel_count == 4:
+            # 4-Omni Drive: 4 corner diagonal wheels (45°, 135°, 225°, 315°)
+            wheels_setup = [
+                {'pos_angle': 45.0,   'wheel_rot': 135.0},
+                {'pos_angle': 135.0,  'wheel_rot': 45.0},
+                {'pos_angle': -135.0, 'wheel_rot': -45.0},
+                {'pos_angle': -45.0,  'wheel_rot': -135.0}
+            ]
+        else:
+            # 3-Omni Drive: Left (-90° facing UP), Top-Right (+30° facing 120°), Bottom-Right (+150° facing 240°)
+            wheels_setup = [
+                {'pos_angle': -90.0, 'wheel_rot': 0.0},
+                {'pos_angle': 30.0,   'wheel_rot': 120.0},
+                {'pos_angle': 150.0,  'wheel_rot': 240.0}
+            ]
 
-        for angle_deg in wheel_angles:
-            rad = math.radians(angle_deg - 90.0)
+        for w_info in wheels_setup:
+            pos_deg = w_info['pos_angle']
+            rot_deg = w_info['wheel_rot']
+
+            rad = math.radians(pos_deg - 90.0)
             xs = r_px * math.cos(rad)
             ys = r_px * math.sin(rad)
 
             painter.save()
             painter.translate(xs, ys)
-            painter.rotate(angle_deg)
 
-            # Wheel Rim Chassis Block
+            # Motor Chassis Bracket extending inward to center
+            painter.setPen(QPen(QColor("#1e272e"), 1.2))
+            painter.setBrush(QBrush(QColor("#2f3542")))
+            motor_w = w_width_px * 1.1
+            motor_l = r_px * 0.35
+            painter.drawRect(QRectF(-motor_w / 2.0, -motor_l / 2.0, motor_w, motor_l))
+
+            painter.rotate(rot_deg)
+
+            # Omni Wheel Rim Body
             wheel_rect = QRectF(-w_width_px / 2.0, -w_len_px / 2.0, w_width_px, w_len_px)
-            painter.setPen(QPen(QColor("#2d3436"), 1.2))
-            painter.setBrush(QBrush(QColor("#353b48")))
+            painter.setPen(QPen(QColor("#1e272e"), 1.2))
+            painter.setBrush(QBrush(QColor("#2d3436")))
             painter.drawRoundedRect(wheel_rect, 2.0, 2.0)
 
             # Metallic Axle Pin
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(QColor("#718093")))
-            painter.drawRect(QRectF(-w_width_px * 0.7, -2.0, w_width_px * 1.4, 4.0))
+            painter.setBrush(QBrush(QColor("#a4b0be")))
+            painter.drawRect(QRectF(-w_width_px * 0.65, -2.0, w_width_px * 1.3, 4.0))
 
-            # Omni Sub-Rollers (Mini Rollers along Rim Edge)
-            num_rollers = 4 if self.wheel_diameter_mm == 100 else 3
+            # Double-Layer Omni Sub-Rollers (Mini Rollers along Rim Edge)
+            num_rollers = 5 if self.wheel_diameter_mm == 100 else 4
             roller_h = w_len_px / (num_rollers * 1.35)
-            painter.setPen(QPen(QColor("#1e272e"), 0.8))
-            painter.setBrush(QBrush(QColor("#e1b12c")))
+            painter.setPen(QPen(QColor("#000000"), 0.8))
+            painter.setBrush(QBrush(QColor("#e1b12c")))  # Gold sub-roller pins
 
             for i in range(num_rollers):
-                ry = -w_len_px / 2.0 + (i + 0.25) * (w_len_px / num_rollers)
-                painter.drawRoundedRect(QRectF(-w_width_px / 2.0 - 1.5, ry, 2.5, roller_h), 1, 1)
-                painter.drawRoundedRect(QRectF(w_width_px / 2.0 - 1.0, ry, 2.5, roller_h), 1, 1)
+                ry = -w_len_px / 2.0 + (i + 0.2) * (w_len_px / num_rollers)
+                painter.drawRoundedRect(QRectF(-w_width_px / 2.0 - 1.8, ry, 2.8, roller_h), 1, 1)
+                painter.drawRoundedRect(QRectF(w_width_px / 2.0 - 1.0, ry, 2.8, roller_h), 1, 1)
 
             painter.restore()
 
