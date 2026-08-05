@@ -299,16 +299,7 @@ class CabinetItem(BaseFieldItem):
         painter.setBrush(QBrush(fill_color))
         painter.drawRoundedRect(cab_rect, 3.0, 3.0)
 
-        # 2. Render Internal Segment Divider Lines: 5, 15, 20, 30, 35 cm
-        div_pen = QPen(QColor("#ffffff"), 1.8, Qt.PenStyle.SolidLine)
-        painter.setPen(div_pen)
-        segment_offsets = [5.0, 15.0, 20.0, 30.0, 35.0]
-        for y_cm in segment_offsets:
-            y_px = y_cm * self.px_per_cm
-            if y_px <= cab_h_px:
-                painter.drawLine(QPointF(0, y_px), QPointF(cab_w_px, y_px))
-
-        # 3. Render 2x15 cm Solatif Reference Lines in front of 10cm segment midpoints (10cm, 25cm, 40cm)
+        # 2. Render 2x15 cm Solatif Reference Lines in front of 10cm segment midpoints (10cm, 25cm, 40cm)
         midpoints_cm = [10.0, 25.0, 40.0]
         painter.setPen(QPen(QColor("#000000"), 1.2))
         painter.setBrush(QBrush(QColor(30, 30, 30, 230)))  # Dark solatif line
