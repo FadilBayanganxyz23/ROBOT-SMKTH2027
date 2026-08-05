@@ -588,17 +588,18 @@ class RobotItem(BaseFieldItem):
         if self.wheel_count == 4:
             # 4-Omni Drive: 4 corner diagonal wheels (45°, 135°, 225°, 315°)
             wheels_setup = [
-                {'pos_angle': 45.0,   'wheel_rot': 135.0},
-                {'pos_angle': 135.0,  'wheel_rot': 45.0},
-                {'pos_angle': -135.0, 'wheel_rot': -45.0},
-                {'pos_angle': -45.0,  'wheel_rot': -135.0}
+                {'pos_angle': 45.0,   'wheel_rot': 45.0 + 90.0},
+                {'pos_angle': 135.0,  'wheel_rot': 135.0 + 90.0},
+                {'pos_angle': -135.0, 'wheel_rot': -135.0 + 90.0},
+                {'pos_angle': -45.0,  'wheel_rot': -45.0 + 90.0}
             ]
         else:
             # 3-Omni Drive: 2 wheels in front (Front-Left -60°, Front-Right +60°) & 1 wheel at back (Back-Center 180°)
+            # Rims are tangential (perpendicular to radial shaft extending from center)
             wheels_setup = [
-                {'pos_angle': -60.0, 'wheel_rot': -30.0},  # Front-Left
-                {'pos_angle': 60.0,  'wheel_rot': 30.0},   # Front-Right
-                {'pos_angle': 180.0, 'wheel_rot': 90.0}    # Back-Center
+                {'pos_angle': -60.0, 'wheel_rot': -60.0 + 90.0}, # Front-Left (30°)
+                {'pos_angle': 60.0,  'wheel_rot': 60.0 + 90.0},  # Front-Right (150°)
+                {'pos_angle': 180.0, 'wheel_rot': 180.0 + 90.0} # Back-Center (270° / horizontal)
             ]
 
         for w_info in wheels_setup:
