@@ -1165,6 +1165,43 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.cab_elevation_widget, 13, 0, 1, 2)
         self.cab_elevation_widget.hide()
 
+        # Cabinet Object Placement Layout Parameters [Dynamic]
+        self.lbl_obj_count = QLabel("Jumlah Objek:")
+        self.spn_obj_count = QSpinBox()
+        self.spn_obj_count.setRange(0, 10)
+        self.spn_obj_count.setValue(2)
+        self.spn_obj_count.setEnabled(False)
+        self.spn_obj_count.valueChanged.connect(self.on_inspector_changed)
+        grid.addWidget(self.lbl_obj_count, 14, 0)
+        grid.addWidget(self.spn_obj_count, 14, 1)
+
+        self.lbl_obj_size = QLabel("Ukuran Objek (cm):")
+        self.spn_obj_size = QDoubleSpinBox()
+        self.spn_obj_size.setRange(1.0, 100.0)
+        self.spn_obj_size.setSingleStep(1.0)
+        self.spn_obj_size.setValue(10.0)
+        self.spn_obj_size.setEnabled(False)
+        self.spn_obj_size.valueChanged.connect(self.on_inspector_changed)
+        grid.addWidget(self.lbl_obj_size, 15, 0)
+        grid.addWidget(self.spn_obj_size, 15, 1)
+
+        self.lbl_obj_spacing = QLabel("Spasi Objek (cm):")
+        self.spn_obj_spacing = QDoubleSpinBox()
+        self.spn_obj_spacing.setRange(0.0, 50.0)
+        self.spn_obj_spacing.setSingleStep(1.0)
+        self.spn_obj_spacing.setValue(5.0)
+        self.spn_obj_spacing.setEnabled(False)
+        self.spn_obj_spacing.valueChanged.connect(self.on_inspector_changed)
+        grid.addWidget(self.lbl_obj_spacing, 16, 0)
+        grid.addWidget(self.spn_obj_spacing, 16, 1)
+
+        self.lbl_obj_count.hide()
+        self.spn_obj_count.hide()
+        self.lbl_obj_size.hide()
+        self.spn_obj_size.hide()
+        self.lbl_obj_spacing.hide()
+        self.spn_obj_spacing.hide()
+
         # Quick Preset Rotation Buttons (Horizontal / Vertikal / Miring)
         rot_box = QHBoxLayout()
         rot_box.setSpacing(4)
@@ -1173,14 +1210,14 @@ class MainWindow(QMainWindow):
             btn_r.setStyleSheet("padding: 4px; font-size: 11px;")
             btn_r.clicked.connect(lambda checked, a=angle: self.set_item_rotation_preset(a))
             rot_box.addWidget(btn_r)
-        grid.addLayout(rot_box, 14, 0, 1, 2)
+        grid.addLayout(rot_box, 17, 0, 1, 2)
 
         # Delete Item Button
         self.btn_delete_item = QPushButton("🗑️ Hapus Objek")
         self.btn_delete_item.setObjectName("dangerBtn")
         self.btn_delete_item.setEnabled(False)
         self.btn_delete_item.clicked.connect(self.delete_selected_item)
-        grid.addWidget(self.btn_delete_item, 15, 0, 1, 2)
+        grid.addWidget(self.btn_delete_item, 18, 0, 1, 2)
 
         return box
 
@@ -1344,6 +1381,9 @@ class MainWindow(QMainWindow):
         self.spn_item_rot.blockSignals(True)
         self.spn_tape_len.blockSignals(True)
         self.spn_tier_count.blockSignals(True)
+        self.spn_obj_count.blockSignals(True)
+        self.spn_obj_size.blockSignals(True)
+        self.spn_obj_spacing.blockSignals(True)
         for lbl_t, spn_t in self.tier_h_widgets:
             spn_t.blockSignals(True)
 
@@ -1361,6 +1401,15 @@ class MainWindow(QMainWindow):
             self.lbl_tier_count.hide()
             self.spn_tier_count.hide()
             self.spn_tier_count.setEnabled(False)
+            self.lbl_obj_count.hide()
+            self.spn_obj_count.hide()
+            self.spn_obj_count.setEnabled(False)
+            self.lbl_obj_size.hide()
+            self.spn_obj_size.hide()
+            self.spn_obj_size.setEnabled(False)
+            self.lbl_obj_spacing.hide()
+            self.spn_obj_spacing.hide()
+            self.spn_obj_spacing.setEnabled(False)
             for lbl_t, spn_t in self.tier_h_widgets:
                 lbl_t.hide()
                 spn_t.hide()
@@ -1389,6 +1438,22 @@ class MainWindow(QMainWindow):
             self.cab_elevation_widget.show()
             self.cab_elevation_widget.set_tier_data(t_hts)
 
+            # Object layout controls for Cabinet
+            self.lbl_obj_count.show()
+            self.spn_obj_count.show()
+            self.spn_obj_count.setEnabled(True)
+            self.spn_obj_count.setValue(getattr(item, 'object_count', 2))
+
+            self.lbl_obj_size.show()
+            self.spn_obj_size.show()
+            self.spn_obj_size.setEnabled(True)
+            self.spn_obj_size.setValue(getattr(item, 'object_size_cm', 10.0))
+
+            self.lbl_obj_spacing.show()
+            self.spn_obj_spacing.show()
+            self.spn_obj_spacing.setEnabled(True)
+            self.spn_obj_spacing.setValue(getattr(item, 'spacing_cm', 5.0))
+
             self.lbl_tape_len.hide()
             self.spn_tape_len.hide()
             self.spn_tape_len.setEnabled(False)
@@ -1399,6 +1464,15 @@ class MainWindow(QMainWindow):
             self.lbl_tier_count.hide()
             self.spn_tier_count.hide()
             self.spn_tier_count.setEnabled(False)
+            self.lbl_obj_count.hide()
+            self.spn_obj_count.hide()
+            self.spn_obj_count.setEnabled(False)
+            self.lbl_obj_size.hide()
+            self.spn_obj_size.hide()
+            self.spn_obj_size.setEnabled(False)
+            self.lbl_obj_spacing.hide()
+            self.spn_obj_spacing.hide()
+            self.spn_obj_spacing.setEnabled(False)
             for lbl_t, spn_t in self.tier_h_widgets:
                 lbl_t.hide()
                 spn_t.hide()
@@ -1412,6 +1486,9 @@ class MainWindow(QMainWindow):
         self.spn_item_rot.blockSignals(False)
         self.spn_tape_len.blockSignals(False)
         self.spn_tier_count.blockSignals(False)
+        self.spn_obj_count.blockSignals(False)
+        self.spn_obj_size.blockSignals(False)
+        self.spn_obj_spacing.blockSignals(False)
         for lbl_t, spn_t in self.tier_h_widgets:
             spn_t.blockSignals(False)
 
@@ -1431,10 +1508,19 @@ class MainWindow(QMainWindow):
         self.spn_item_rot.setEnabled(False)
         self.spn_tape_len.setEnabled(False)
         self.spn_tier_count.setEnabled(False)
+        self.spn_obj_count.setEnabled(False)
+        self.spn_obj_size.setEnabled(False)
+        self.spn_obj_spacing.setEnabled(False)
         self.lbl_tape_len.hide()
         self.spn_tape_len.hide()
         self.lbl_tier_count.hide()
         self.spn_tier_count.hide()
+        self.lbl_obj_count.hide()
+        self.spn_obj_count.hide()
+        self.lbl_obj_size.hide()
+        self.spn_obj_size.hide()
+        self.lbl_obj_spacing.hide()
+        self.spn_obj_spacing.hide()
         for lbl_t, spn_t in self.tier_h_widgets:
             lbl_t.hide()
             spn_t.hide()
@@ -1465,6 +1551,17 @@ class MainWindow(QMainWindow):
                 t_cnt = self.spn_tier_count.value()
                 t_hts = [spn_t.value() for idx, (lbl_t, spn_t) in enumerate(self.tier_h_widgets) if idx < t_cnt]
                 item.set_tiers(t_cnt, t_hts)
+
+                # Update cabinet object parameters
+                o_cnt = self.spn_obj_count.value()
+                o_size = self.spn_obj_size.value()
+                o_sp = self.spn_obj_spacing.value()
+                item.set_object_params(o_cnt, o_size, o_sp, auto_fit_length=True)
+
+                # Sync spn_item_h with calculated length
+                self.spn_item_h.blockSignals(True)
+                self.spn_item_h.setValue(item.height_cm)
+                self.spn_item_h.blockSignals(False)
 
                 # Refresh UI SpinBoxes visibility & elevation diagram
                 for idx, (lbl_t, spn_t) in enumerate(self.tier_h_widgets):
@@ -1531,7 +1628,10 @@ class MainWindow(QMainWindow):
         elif o_type == 'cabinet':
             t_cnt = c_data.get('tier_count', 3)
             t_hts = c_data.get('tier_heights', [])
-            item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tier_count=t_cnt, tier_heights=t_hts, px_per_cm=self.scene.px_per_cm)
+            o_cnt = c_data.get('object_count', 2)
+            o_size = c_data.get('object_size_cm', 10.0)
+            o_sp = c_data.get('spacing_cm', 5.0)
+            item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tier_count=t_cnt, tier_heights=t_hts, object_count=o_cnt, object_size_cm=o_size, spacing_cm=o_sp, px_per_cm=self.scene.px_per_cm)
 
         if item:
             item.setRotation(rot)
@@ -1752,7 +1852,10 @@ class MainWindow(QMainWindow):
             elif o_type == 'cabinet':
                 t_cnt = obj.get('tier_count', 3)
                 t_hts = obj.get('tier_heights', [])
-                item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tier_count=t_cnt, tier_heights=t_hts, px_per_cm=self.scene.px_per_cm)
+                o_cnt = obj.get('object_count', 2)
+                o_size = obj.get('object_size_cm', 10.0)
+                o_sp = obj.get('spacing_cm', 5.0)
+                item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tier_count=t_cnt, tier_heights=t_hts, object_count=o_cnt, object_size_cm=o_size, spacing_cm=o_sp, px_per_cm=self.scene.px_per_cm)
 
             if item:
                 item.setRotation(rot)

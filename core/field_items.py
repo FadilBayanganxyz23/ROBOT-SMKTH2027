@@ -270,9 +270,10 @@ class WallItem(RectFieldItem):
 
 class CabinetItem(BaseFieldItem):
     """
-    Cabinet / Lemari obstacle item with customizable dimensions and shelf tiers.
-    User can configure the number of tiers and shelf heights.
-    No reference lines.
+    Cabinet / Lemari obstacle item with customizable dimensions, shelf tiers, and placed object layout.
+    Supports object placement parameters along cabinet length:
+    Pattern: [spacing_cm] [object_size_cm] [spacing_cm] [object_size_cm] [spacing_cm]...
+    User can configure object count, object size, and spacing distance.
     """
     def __init__(self, name: str = "Lemari", x_cm: float = 120.0, y_cm: float = 250.0,
                  width_cm: float = 15.0, height_cm: float = 45.0, px_per_cm: float = 2.5, **kwargs):
@@ -293,6 +294,26 @@ class CabinetItem(BaseFieldItem):
         else:
             eq_h = self.height_cm / float(self.tier_count)
             self.tier_heights = [round(eq_h, 1)] * self.tier_count
+
+        # Object Placement Parameters along cabinet length
+        self.object_count = max(0, int(kwargs.get('object_count', 2)))
+        self.object_size_cm = max(1.0, float(kwargs.get('object_size_cm', 10.0)))
+        self.spacing_cm = max(0.0, float(kwargs.get('spacing_cm', 5.0)))
+
+    def get_calculated_length_cm(self) -> float:
+        """Calculate required cabinet length (height_cm) for the current object count, size, and spacing."""
+        if self.object_count <= 0:
+            return self.height_cm
+        return self.spacing_cm + self.object_count * (self.object_size_cm + self.spacing_cm)
+
+    def set_object_params(self, count: int, size_cm: float, spacing_cm: float, auto_fit_length: bool = True):
+        self.object_count = max(0, count)
+        self.object_size_cm = max(1.0, size_cm)
+        self.spacing_cm = max(0.0, spacing_cm)
+        if auto_fit_length and self.object_count > 0:
+            self.height_cm = self.get_calculated_length_cm()
+        self.prepareGeometryChange()
+        self.update()
 
     def get_total_height_cm(self) -> float:
         return sum(self.tier_heights) if self.tier_heights else 45.0
@@ -337,6 +358,29 @@ class CabinetItem(BaseFieldItem):
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRoundedRect(inner_rect, 2.0, 2.0)
 
+        # 3. Render Top-Down Object Placement Boxes & Spacing along Cabinet Length
+        if self.object_count > 0 and self.object_size_cm > 0:
+            px_per_cm = self.px_per_cm
+            obj_h_px = self.object_size_cm * px_per_cm
+            obj_w_px = max(4.0, cab_w_px - 8.0)
+            obj_x_px = (cab_w_px - obj_w_px) / 2.0
+
+            for i in range(self.object_count):
+                obj_y_cm = self.spacing_cm + i * (self.object_size_cm + self.spacing_cm)
+                obj_y_px = obj_y_cm * px_per_cm
+                if obj_y_px + obj_h_px <= cab_h_px + 2.0:
+                    o_rect = QRectF(obj_x_px, obj_y_px, obj_w_px, obj_h_px)
+
+                    # Object Box (Amber / Orange Accent)
+                    painter.setPen(QPen(QColor("#ffffff"), 1.2))
+                    painter.setBrush(QBrush(QColor(230, 126, 34, 210)))
+                    painter.drawRoundedRect(o_rect, 2.0, 2.0)
+
+                    # Object Label
+                    painter.setFont(QFont("Segoe UI", 7, QFont.Weight.Bold))
+                    painter.setPen(QPen(QColor("#ffffff")))
+                    painter.drawText(o_rect, Qt.AlignmentFlag.AlignCenter, f"Obj {i+1}")
+
         # Selection handles if selected
         if self.isSelected():
             handle_size = 6
@@ -353,6 +397,9 @@ class CabinetItem(BaseFieldItem):
         d = super().to_dict()
         d['tier_count'] = self.tier_count
         d['tier_heights'] = [round(h, 1) for h in self.tier_heights]
+        d['object_count'] = self.object_count
+        d['object_size_cm'] = round(self.object_size_cm, 1)
+        d['spacing_cm'] = round(self.spacing_cm, 1)
         return d
 
 
