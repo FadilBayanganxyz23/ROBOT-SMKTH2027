@@ -139,14 +139,21 @@ Lapangan/
 
 ---
 
-## 🚀 Cara Menjalankan Aplikasi
+## 🚀 Cara Menjalankan
 
+### 1. Editor Layout Lapangan & Simulator Robot
 ```bash
-# 1. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 2. Jalankan aplikasi
+# Jalankan Editor Lapangan & Simulator Robot
 python main.py
+```
+
+### 2. Sub-Proyek Lance Tools
+```bash
+# Jalankan Sub-proyek Lance Tools
+python -m lance_tools.main
 ```
 
 ### 🧪 Menjalankan Test Suite
