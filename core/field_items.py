@@ -253,20 +253,41 @@ class WallItem(RectFieldItem):
 
 
 class CabinetItem(RectFieldItem):
-    """Cabinet / Lemari obstacle item."""
+    """
+    15x20 cm Cabinet / Lemari obstacle item.
+    Contains 3 lines of length 15 cm spaced at 5 cm intervals.
+    """
     def __init__(self, name: str = "Lemari", x_cm: float = 140.0, y_cm: float = 300.0,
-                 width_cm: float = 40.0, height_cm: float = 60.0, px_per_cm: float = 2.5, **kwargs):
+                 width_cm: float = 15.0, height_cm: float = 20.0, px_per_cm: float = 2.5, **kwargs):
         super().__init__(
             item_type="cabinet",
             name=name,
             x_cm=x_cm,
             y_cm=y_cm,
-            width_cm=width_cm,
-            height_cm=height_cm,
+            width_cm=width_cm if width_cm else 15.0,
+            height_cm=height_cm if height_cm else 20.0,
             px_per_cm=px_per_cm,
             color="#8e44ad",  # Amethyst Purple
             label=""
         )
+
+    def paint(self, painter: QPainter, option, widget=None):
+        super().paint(painter, option, widget)
+
+        # Draw 3 lines of 15cm length spaced 5cm apart across cabinet
+        w_px = self.width_cm * self.px_per_cm
+        h_px = self.height_cm * self.px_per_cm
+
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        line_pen = QPen(QColor("#ffffff"), 1.8, Qt.PenStyle.SolidLine)
+        painter.setPen(line_pen)
+
+        # 3 lines at 5cm, 10cm, and 15cm from top/left with length 15cm
+        for step in [5.0, 10.0, 15.0]:
+            y_px = step * self.px_per_cm
+            if y_px <= h_px:
+                line_len_px = min(15.0 * self.px_per_cm, w_px)
+                painter.drawLine(QPointF(0, y_px), QPointF(line_len_px, y_px))
 
 
 class LineItem(RectFieldItem):

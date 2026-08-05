@@ -1,0 +1,20 @@
+jadi aku ingin build sebuah software dengan bahasa python untuk membuat sebuah gui.dimana di situ terisi
+oleh 1 gambar panel utama atau lapangan dengan ukuran 2x4M nah itu oknversi jadi ukuran pixel jadi berapa pixel 
+untuk mewakili 1mm. untuk ukurannya lapngan juga bisa diadjust atau di sesuaikan
+
+nah disini aku ingin agar layout lapangan bisa di edit, di tambahkan stand cube, garis, tembok, lemari dan Sebuah kotak bernama home dengan ukuran 50x50cm
+
+jadi nanti sistemnya aku akan mengedit drag item yang kupulih tersebut kedalam lapangannya, nah buat indikator juga 
+kecil untuk menandai berapa cm dilapangan dan buad grid agar peletakannya lebih mudah, buat 1grid itu mewakili berapa cm
+
+buat agar user dapat menginputkan bentuk robotnya berapa sisi dan berapa ukuran diameter,
+
+nah object bernama robot dapat bergerak kesegala arah, user dapat menggerakkannya dengan cara click robot, dan geser kemana ia akan pergi
+
+nah kasih option untuk membuat file maps.yaml 
+
+
+
+ukuran stand cube adalah 20x20cm dengan solatif di tengahnya dengan panjang 10cm, dan lebar 2cm
+ukuran tembok ukuran temboknya adalah lebar2cm, dan untuk panjangnya bisa disesuaikan oleh user, tembok bisa dipasang secara horizontal
+maupun secara vertikal, kuga bisa miring di berbagai drajat 

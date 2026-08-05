@@ -303,8 +303,8 @@ class MainWindow(QMainWindow):
         btn_line.clicked.connect(self.add_line)
         layout.addWidget(btn_line)
 
-        # Add Cabinet / Lemari
-        btn_cabinet = QPushButton("🗄️ Lemari / Cabinet")
+        # Add Cabinet / Lemari (15x20 cm)
+        btn_cabinet = QPushButton("🗄️ Lemari (15x20 cm)")
         btn_cabinet.setStyleSheet("text-align: left; padding: 8px;")
         btn_cabinet.clicked.connect(self.add_cabinet)
         layout.addWidget(btn_cabinet)
@@ -607,8 +607,9 @@ class MainWindow(QMainWindow):
                 )
 
     def on_item_moved(self, item: BaseFieldItem):
-        # Snap position if snap enabled (Robot & Stand Cube move freely without grid snapping)
-        if self.scene.snap_enabled and item != self.robot_item and getattr(item, 'item_type', '') != 'stand_cube':
+        # Snap position if snap enabled (Robot, Stand Cube, & Cabinet move freely without grid snapping)
+        is_free_item = (item == self.robot_item) or (getattr(item, 'item_type', '') in ('stand_cube', 'cabinet'))
+        if self.scene.snap_enabled and not is_free_item:
             pt = item.pos()
             snapped = self.scene.snap_point(pt)
             if pt != snapped:
@@ -778,7 +779,7 @@ class MainWindow(QMainWindow):
 
     def add_cabinet(self):
         count = sum(1 for it in self.scene.items() if getattr(it, 'item_type', '') == 'cabinet')
-        item = CabinetItem(name=f"Lemari {count+1}", x_cm=120.0, y_cm=250.0, px_per_cm=self.scene.px_per_cm)
+        item = CabinetItem(name=f"Lemari {count+1}", x_cm=120.0, y_cm=250.0, width_cm=15.0, height_cm=20.0, px_per_cm=self.scene.px_per_cm)
         self.connect_item_signals(item)
         self.scene.addItem(item)
 
