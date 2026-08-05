@@ -303,8 +303,8 @@ class MainWindow(QMainWindow):
         btn_line.clicked.connect(self.add_line)
         layout.addWidget(btn_line)
 
-        # Add Cabinet / Lemari (15x20 cm)
-        btn_cabinet = QPushButton("🗄️ Lemari (15x20 cm)")
+        # Add Cabinet / Lemari (15x45 cm)
+        btn_cabinet = QPushButton("🗄️ Lemari (15x45 cm)")
         btn_cabinet.setStyleSheet("text-align: left; padding: 8px;")
         btn_cabinet.clicked.connect(self.add_cabinet)
         layout.addWidget(btn_cabinet)
@@ -779,7 +779,7 @@ class MainWindow(QMainWindow):
 
     def add_cabinet(self):
         count = sum(1 for it in self.scene.items() if getattr(it, 'item_type', '') == 'cabinet')
-        item = CabinetItem(name=f"Lemari {count+1}", x_cm=120.0, y_cm=250.0, width_cm=15.0, height_cm=20.0, px_per_cm=self.scene.px_per_cm)
+        item = CabinetItem(name=f"Lemari {count+1}", x_cm=120.0, y_cm=250.0, width_cm=15.0, height_cm=45.0, px_per_cm=self.scene.px_per_cm)
         self.connect_item_signals(item)
         self.scene.addItem(item)
 

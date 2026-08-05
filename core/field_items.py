@@ -252,42 +252,87 @@ class WallItem(RectFieldItem):
         )
 
 
-class CabinetItem(RectFieldItem):
+class CabinetItem(BaseFieldItem):
     """
-    15x20 cm Cabinet / Lemari obstacle item.
-    Contains 3 lines of length 15 cm spaced at 5 cm intervals.
+    15x45 cm Cabinet / Lemari obstacle item.
+    Segment pattern: 5cm - 10cm - 5cm - 10cm - 5cm - 10cm (Total length 45 cm).
+    Each 10cm segment has a 2x15cm reference solatif line at its midpoint extending forward.
     """
-    def __init__(self, name: str = "Lemari", x_cm: float = 140.0, y_cm: float = 300.0,
-                 width_cm: float = 15.0, height_cm: float = 20.0, px_per_cm: float = 2.5, **kwargs):
+    def __init__(self, name: str = "Lemari", x_cm: float = 120.0, y_cm: float = 250.0,
+                 width_cm: float = 15.0, height_cm: float = 45.0, px_per_cm: float = 2.5, **kwargs):
         super().__init__(
             item_type="cabinet",
             name=name,
             x_cm=x_cm,
             y_cm=y_cm,
             width_cm=width_cm if width_cm else 15.0,
-            height_cm=height_cm if height_cm else 20.0,
+            height_cm=height_cm if height_cm else 45.0,
             px_per_cm=px_per_cm,
-            color="#8e44ad",  # Amethyst Purple
-            label=""
+            color="#8e44ad"
         )
+        self.tape_length_cm = 15.0  # Panjang garis referensi 15 cm
+        self.tape_width_cm = 2.0    # Lebar/ketebalan garis 2 cm
+
+    def boundingRect(self) -> QRectF:
+        cab_w_px = self.width_cm * self.px_per_cm
+        cab_h_px = self.height_cm * self.px_per_cm
+        tape_len_px = self.tape_length_cm * self.px_per_cm
+        margin = 6.0
+        return QRectF(-margin, -margin, cab_w_px + tape_len_px + 2*margin, cab_h_px + 2*margin)
 
     def paint(self, painter: QPainter, option, widget=None):
-        super().paint(painter, option, widget)
-
-        # Draw 3 lines of 15cm length spaced 5cm apart across cabinet
-        w_px = self.width_cm * self.px_per_cm
-        h_px = self.height_cm * self.px_per_cm
-
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        line_pen = QPen(QColor("#ffffff"), 1.8, Qt.PenStyle.SolidLine)
-        painter.setPen(line_pen)
 
-        # 3 lines at 5cm, 10cm, and 15cm from top/left with length 15cm
-        for step in [5.0, 10.0, 15.0]:
-            y_px = step * self.px_per_cm
-            if y_px <= h_px:
-                line_len_px = min(15.0 * self.px_per_cm, w_px)
-                painter.drawLine(QPointF(0, y_px), QPointF(line_len_px, y_px))
+        cab_w_px = self.width_cm * self.px_per_cm
+        cab_h_px = self.height_cm * self.px_per_cm
+        tape_w_px = self.tape_width_cm * self.px_per_cm    # Lebar/tebal 2 cm
+        tape_l_px = self.tape_length_cm * self.px_per_cm   # Panjang 15 cm
+
+        # 1. Render 15x45 cm Cabinet Main Block
+        cab_rect = QRectF(0, 0, cab_w_px, cab_h_px)
+        fill_color = QColor(self.item_color)
+        fill_color.setAlpha(200)
+        pen_color = QColor("#f1c40f") if self.isSelected() else QColor(self.item_color).lighter(130)
+        pen_width = 3.5 if self.isSelected() else 2.0
+
+        painter.setPen(QPen(pen_color, pen_width))
+        painter.setBrush(QBrush(fill_color))
+        painter.drawRoundedRect(cab_rect, 3.0, 3.0)
+
+        # 2. Render Internal Segment Divider Lines: 5, 15, 20, 30, 35 cm
+        div_pen = QPen(QColor("#ffffff"), 1.8, Qt.PenStyle.SolidLine)
+        painter.setPen(div_pen)
+        segment_offsets = [5.0, 15.0, 20.0, 30.0, 35.0]
+        for y_cm in segment_offsets:
+            y_px = y_cm * self.px_per_cm
+            if y_px <= cab_h_px:
+                painter.drawLine(QPointF(0, y_px), QPointF(cab_w_px, y_px))
+
+        # 3. Render 2x15 cm Solatif Reference Lines in front of 10cm segment midpoints (10cm, 25cm, 40cm)
+        midpoints_cm = [10.0, 25.0, 40.0]
+        painter.setPen(QPen(QColor("#000000"), 1.2))
+        painter.setBrush(QBrush(QColor(30, 30, 30, 230)))  # Dark solatif line
+
+        for mid_y_cm in midpoints_cm:
+            mid_y_px = mid_y_cm * self.px_per_cm
+            tape_rect = QRectF(cab_w_px, mid_y_px - tape_w_px / 2.0, tape_l_px, tape_w_px)
+            painter.drawRect(tape_rect)
+
+        # 4. Selection handles if selected
+        if self.isSelected():
+            handle_size = 6
+            painter.setBrush(QBrush(QColor("#f1c40f")))
+            painter.setPen(QPen(QColor("#000000"), 1))
+            handles = [
+                QPointF(0, 0), QPointF(cab_w_px, 0),
+                QPointF(0, cab_h_px), QPointF(cab_w_px, cab_h_px)
+            ]
+            for mid_y_cm in midpoints_cm:
+                mid_y_px = mid_y_cm * self.px_per_cm
+                handles.append(QPointF(cab_w_px + tape_l_px, mid_y_px))
+
+            for h in handles:
+                painter.drawRect(QRectF(h.x() - handle_size/2, h.y() - handle_size/2, handle_size, handle_size))
 
 
 class LineItem(RectFieldItem):
