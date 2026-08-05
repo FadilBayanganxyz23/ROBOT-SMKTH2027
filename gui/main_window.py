@@ -18,7 +18,10 @@ from core.field_items import (
     BaseFieldItem, HomeBoxItem, StandCubeItem, WallItem,
     LineItem, CabinetItem, RobotItem
 )
-from io_handler.map_exporter import export_to_yaml, import_from_yaml
+from io_handler.map_exporter import (
+    export_to_yaml, import_from_yaml,
+    export_robot_to_yaml, import_robot_from_yaml
+)
 
 
 class MainWindow(QMainWindow):
@@ -475,7 +478,81 @@ class MainWindow(QMainWindow):
 
         grid.addLayout(st_layout, 8, 0, 1, 2)
 
+        # Robot YAML Export & Import Action Buttons
+        btn_robot_save = QPushButton("💾 Simpan Robot (YAML)")
+        btn_robot_save.setStyleSheet("background-color: #238636; color: white; font-weight: bold; padding: 6px; border-radius: 4px;")
+        btn_robot_save.clicked.connect(self.export_robot_yaml)
+
+        btn_robot_load = QPushButton("📂 Buka Robot (YAML)")
+        btn_robot_load.setStyleSheet("background-color: #1f6beb; color: white; font-weight: bold; padding: 6px; border-radius: 4px;")
+        btn_robot_load.clicked.connect(self.import_robot_yaml)
+
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(6)
+        btn_row.addWidget(btn_robot_save)
+        btn_row.addWidget(btn_robot_load)
+        grid.addLayout(btn_row, 9, 0, 1, 2)
+
         return box
+
+    def export_robot_yaml(self):
+        """Export current robot configuration and sensors to robot.yaml."""
+        if not hasattr(self, 'robot_item') or not self.robot_item:
+            QMessageBox.warning(self, "Peringatan", "Robot belum dibuat!")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Simpan Konfigurasi Robot YAML", "robot.yaml", "YAML Files (*.yaml *.yml)"
+        )
+        if file_path:
+            try:
+                robot_data = self.robot_item.to_dict()
+                export_robot_to_yaml(file_path, robot_data)
+                QMessageBox.information(
+                    self, "Sukses Simpan Robot",
+                    f"Konfigurasi spesifikasi robot berhasil disimpan ke:\n{file_path}"
+                )
+            except Exception as e:
+                QMessageBox.critical(self, "Error Simpan Robot", f"Gagal menyimpan robot YAML:\n{e}")
+
+    def import_robot_yaml(self):
+        """Import robot configuration and sensors from a robot.yaml file."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Buka Konfigurasi Robot YAML", "", "YAML Files (*.yaml *.yml)"
+        )
+        if file_path:
+            try:
+                r_cfg = import_robot_from_yaml(file_path)
+                if not r_cfg:
+                    QMessageBox.warning(self, "File Kosong", "Data robot tidak ditemukan pada file YAML.")
+                    return
+
+                if hasattr(self, 'robot_item') and self.robot_item:
+                    diam = r_cfg.get('diameter_cm', 30.0)
+                    rot = r_cfg.get('rotation_deg', 0.0)
+                    sensors_cfg = r_cfg.get('sensors', {})
+                    x_cm = r_cfg.get('x_cm', self.robot_item.get_x_cm())
+                    y_cm = r_cfg.get('y_cm', self.robot_item.get_y_cm())
+
+                    self.spn_robot_diam.setValue(diam)
+                    self.spn_robot_rot.setValue(rot)
+                    self.robot_item.set_shape_params(diameter_cm=diam)
+                    self.robot_item.set_x_cm(x_cm)
+                    self.robot_item.set_y_cm(y_cm)
+                    self.robot_item.setRotation(rot)
+                    self.robot_item.set_sensors(sensors_cfg)
+
+                    self.on_sensor_pos_changed(self.cb_sensor_pos.currentIndex())
+                    self.update_robot_pos_label()
+                    self.update_sensor_readouts_ui()
+                    self.scene.update()
+
+                QMessageBox.information(
+                    self, "Sukses Buka Robot",
+                    f"Berhasil memuat konfigurasi robot dari:\n{file_path}"
+                )
+            except Exception as e:
+                QMessageBox.critical(self, "Error Memuat Robot", f"Gagal membaca robot YAML:\n{e}")
 
     def on_sensor_pos_changed(self, index: int):
         """Triggered when user selects a different sensor position in dropdown."""

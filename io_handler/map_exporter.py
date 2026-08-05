@@ -146,3 +146,45 @@ def _parse_val(val_str: str):
         return int(val_str)
     except ValueError:
         return val_str.strip('"\'')
+
+
+def export_robot_to_yaml(file_path: str, robot_dict: dict) -> bool:
+    """
+    Export robot configuration data dictionary to a YAML file (robot.yaml).
+    """
+    data = {'robot': robot_dict}
+    if HAS_YAML:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=False, indent=2)
+        return True
+    else:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write("# Robot Specification Configuration\n")
+            f.write("robot:\n")
+            for k, v in robot_dict.items():
+                if isinstance(v, dict):
+                    f.write(f"  {k}:\n")
+                    for sk, sv in v.items():
+                        f.write(f"    {sk}: {sv}\n")
+                else:
+                    f.write(f"  {k}: {v}\n")
+        return True
+
+
+def import_robot_from_yaml(file_path: str) -> dict:
+    """
+    Import robot configuration data from a robot YAML file.
+    Returns robot data dictionary.
+    """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    if HAS_YAML:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+            if isinstance(data, dict) and 'robot' in data:
+                return data['robot']
+            return data if data else {}
+    else:
+        full_data = import_from_yaml(file_path)
+        return full_data.get('robot', full_data)
