@@ -102,20 +102,32 @@ Aplikasi GUI desktop berbasis **Python + PyQt6** untuk mendesain layout lapangan
 
 ```
 Lapangan/
-├── main.py                  ← Entry point launcher aplikasi
-├── requirements.txt         ← Dependencies (PyQt6, PyYAML)
-├── maps.yaml                ← File layout peta tersimpan
-├── robot.yaml               ← File templat spesifikasi hardware robot
+├── .venv/                   ← Python virtual environment
 ├── core/                    ← Logika inti & graphics items
-│   ├── field_items.py       ← Objek grafis (HomeBox, StandCube, Wall, Line, Cabinet, Robot)
-│   └── field_canvas.py      ← FieldScene & FieldView (canvas, grid, ruler, zoom)
+│   ├── __init__.py
+│   ├── field_canvas.py      ← FieldScene & FieldView (canvas, grid, ruler, zoom)
+│   └── field_items.py       ← Objek grafis (HomeBox, StandCube, Wall, Line, Cabinet, Robot)
 ├── gui/                     ← Antarmuka pengguna (UI)
+│   ├── __init__.py
 │   └── main_window.py       ← MainWindow (toolbar, sidebar palette, inspector, sensor controls)
 ├── io_handler/              ← Input/Output
+│   ├── __init__.py
 │   └── map_exporter.py      ← Parser Import & Export YAML (maps & robot)
-└── tests/                   ← Unit test suite
-    ├── test_core.py          ← Tes ekspor & impor YAML
-    └── test_app.py           ← Tes integrasi GUI
+├── Lapangan/                ← Folder penyimpanan layout peta
+│   └── maps.yaml            ← File layout peta tersimpan
+├── Robot/                   ← Folder penyimpanan spesifikasi robot
+│   └── robot.yaml           ← File templat spesifikasi hardware robot
+├── tests/                   ← Unit test suite
+│   ├── __init__.py
+│   ├── test_app.py           ← Tes integrasi GUI
+│   └── test_core.py          ← Tes ekspor & impor YAML
+├── .gitignore
+├── field_layout.png         ← Hasil ekspor gambar layout
+├── main.py                  ← Entry point launcher aplikasi
+├── maps.yaml                ← File map default
+├── Prompt.txt               ← Catatan spesifikasi & prompt
+├── README.md                ← Dokumentasi proyek
+└── requirements.txt         ← Dependencies (PyQt6, PyYAML)
 ```
 
 ---
