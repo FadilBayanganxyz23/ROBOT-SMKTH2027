@@ -352,20 +352,22 @@ class LineItem(RectFieldItem):
 
 class RobotItem(BaseFieldItem):
     """
-    Robot Item rendered as Oval / Ellipse shape with 7 Sensor Mount Positions.
+    Robot Item rendered as Oval / Ellipse shape with 9 Sensor Mount Positions.
     Front 3 sensors (front_left, front_center, front_right) are aligned parallel in a straight line.
     Includes 2D Raycasting Distance Detection against field boundaries and internal obstacles.
     Rendered on top of all field objects (ZValue = 100.0).
     """
 
     SENSOR_CONFIGS = {
-        'front_left':   {'rel_x': -0.6, 'rel_y': -1.0, 'angle': 0.0},
-        'front_center': {'rel_x':  0.0, 'rel_y': -1.0, 'angle': 0.0},
-        'front_right':  {'rel_x':  0.6, 'rel_y': -1.0, 'angle': 0.0},
-        'right_rear':   {'rel_x':  0.866, 'rel_y': 0.5, 'angle': 120.0},
-        'back_right':   {'rel_x':  0.342, 'rel_y': 0.94, 'angle': 160.0},
-        'back_left':    {'rel_x': -0.342, 'rel_y': 0.94, 'angle': -160.0},
-        'left_rear':    {'rel_x': -0.866, 'rel_y': 0.5, 'angle': -120.0}
+        'front_left':   {'rel_x': -0.6,   'rel_y': -1.0, 'angle': 0.0},
+        'front_center': {'rel_x':  0.0,   'rel_y': -1.0, 'angle': 0.0},
+        'front_right':  {'rel_x':  0.6,   'rel_y': -1.0, 'angle': 0.0},
+        'right_front':  {'rel_x':  0.866, 'rel_y': -0.5, 'angle': 60.0},
+        'right_rear':   {'rel_x':  0.866, 'rel_y':  0.5, 'angle': 120.0},
+        'back_right':   {'rel_x':  0.342, 'rel_y':  0.94, 'angle': 160.0},
+        'back_left':    {'rel_x': -0.342, 'rel_y':  0.94, 'angle': -160.0},
+        'left_rear':    {'rel_x': -0.866, 'rel_y':  0.5, 'angle': -120.0},
+        'left_front':   {'rel_x': -0.866, 'rel_y': -0.5, 'angle': -60.0}
     }
 
     def __init__(self, x_cm: float = 100.0, y_cm: float = 50.0,
@@ -384,15 +386,17 @@ class RobotItem(BaseFieldItem):
         )
         self.setZValue(100.0)  # Always stay on top of all other objects
 
-        # 7 Sensor Mount Positions: 'none', 'ultrasonic', 'infrared'
+        # 9 Sensor Mount Positions: 'none', 'ultrasonic', 'infrared'
         self.sensors = {
             'front_left': 'none',
             'front_center': 'none',
             'front_right': 'none',
-            'left_rear': 'none',
-            'back_left': 'none',
+            'right_front': 'none',
+            'right_rear': 'none',
             'back_right': 'none',
-            'right_rear': 'none'
+            'back_left': 'none',
+            'left_rear': 'none',
+            'left_front': 'none'
         }
         if 'sensors' in kwargs and isinstance(kwargs['sensors'], dict):
             self.set_sensors(kwargs['sensors'])

@@ -414,8 +414,8 @@ class MainWindow(QMainWindow):
         self.lbl_robot_pos.setObjectName("highlightVal")
         grid.addWidget(self.lbl_robot_pos, 3, 0, 1, 2)
 
-        # --- 7 Sensor Mount Positions Panel ---
-        lbl_sensors_title = QLabel("📡 Konfigurasi 7 Sensor Robot:")
+        # --- 9 Sensor Mount Positions Panel ---
+        lbl_sensors_title = QLabel("📡 Konfigurasi 9 Sensor Robot:")
         lbl_sensors_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 6px;")
         grid.addWidget(lbl_sensors_title, 4, 0, 1, 2)
 
@@ -425,10 +425,12 @@ class MainWindow(QMainWindow):
             ('front_left', 'Depan Kiri:'),
             ('front_center', 'Depan Tengah:'),
             ('front_right', 'Depan Kanan:'),
+            ('left_front', 'Kiri Depan:'),
             ('left_rear', 'Kiri Belakang:'),
             ('back_left', 'Belakang Kiri:'),
             ('back_right', 'Belakang Kanan:'),
-            ('right_rear', 'Kanan Belakang:')
+            ('right_rear', 'Kanan Belakang:'),
+            ('right_front', 'Kanan Depan:')
         ]
 
         sensor_options = ["❌ Tidak Dipasang", "📡 Ultrasonic (US)", "🔴 Infrared (IR)"]
