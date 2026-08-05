@@ -420,6 +420,7 @@ class MainWindow(QMainWindow):
         grid.addWidget(lbl_sensors_title, 4, 0, 1, 2)
 
         self.sensor_combos = {}
+        self.sensor_readout_labels = {}
         sensor_list = [
             ('front_left', 'Depan Kiri:'),
             ('front_center', 'Depan Tengah:'),
@@ -435,12 +436,24 @@ class MainWindow(QMainWindow):
         row = 5
         for pos_key, pos_label in sensor_list:
             grid.addWidget(QLabel(pos_label), row, 0)
+
+            combo_layout = QVBoxLayout()
+            combo_layout.setSpacing(2)
+
             cb = QComboBox()
             cb.addItems(sensor_options)
-            cb.setCurrentIndex(0)  # Default 'none'
+            cb.setCurrentIndex(0)
             cb.currentIndexChanged.connect(lambda idx, k=pos_key: self.on_sensor_changed(k, idx))
-            grid.addWidget(cb, row, 1)
+            combo_layout.addWidget(cb)
+
+            lbl_readout = QLabel("Status: Nonaktif")
+            lbl_readout.setStyleSheet("color: #8b949e; font-size: 11px;")
+            combo_layout.addWidget(lbl_readout)
+
+            grid.addLayout(combo_layout, row, 1)
+
             self.sensor_combos[pos_key] = cb
+            self.sensor_readout_labels[pos_key] = lbl_readout
             row += 1
 
         return box
@@ -451,6 +464,27 @@ class MainWindow(QMainWindow):
         if self.robot_item:
             self.robot_item.sensors[pos_key] = stype
             self.robot_item.update()
+            self.update_sensor_readouts_ui()
+
+    def update_sensor_readouts_ui(self):
+        """Update live sensor distance readouts in sidebar panel."""
+        if not hasattr(self, 'robot_item') or not self.robot_item:
+            return
+        readouts = self.robot_item.get_sensor_readouts()
+        for pos_key, label_widget in self.sensor_readout_labels.items():
+            info = readouts.get(pos_key, {})
+            stype = info.get('type', 'none')
+            if stype == 'none':
+                label_widget.setText("Status: Nonaktif")
+                label_widget.setStyleSheet("color: #8b949e; font-size: 11px;")
+            else:
+                dist = info.get('distance_cm', 0.0)
+                target = info.get('target_name', 'Batas')
+                label_widget.setText(f"📏 {dist:.1f} cm ({target})")
+                if stype == 'ultrasonic':
+                    label_widget.setStyleSheet("color: #00cec9; font-weight: bold; font-size: 11px;")
+                else:
+                    label_widget.setStyleSheet("color: #ff4757; font-weight: bold; font-size: 11px;")
 
     def build_inspector_box(self) -> QGroupBox:
         """Create Selected Item Property Inspector panel."""
@@ -628,10 +662,13 @@ class MainWindow(QMainWindow):
         if self.robot_item:
             self.robot_item.set_shape_params(diameter_cm=diam)
             self.scene.update()
+            self.update_sensor_readouts_ui()
 
     def on_robot_rot_changed(self):
         if self.robot_item:
             self.robot_item.setRotation(self.spn_robot_rot.value())
+            self.robot_item.update()
+            self.update_sensor_readouts_ui()
 
     def choose_robot_color(self):
         if self.robot_item:
@@ -649,6 +686,8 @@ class MainWindow(QMainWindow):
         
         if item == self.selected_item:
             self.update_inspector_fields(item)
+
+        self.update_sensor_readouts_ui()
 
     def on_item_selected(self, item: BaseFieldItem):
         if item.isSelected():

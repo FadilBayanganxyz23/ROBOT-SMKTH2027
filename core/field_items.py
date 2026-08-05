@@ -353,9 +353,21 @@ class LineItem(RectFieldItem):
 class RobotItem(BaseFieldItem):
     """
     Robot Item rendered as Oval / Ellipse shape with 7 Sensor Mount Positions.
-    Moves interactively on field with heading direction indicator and sensor visualization.
+    Front 3 sensors (front_left, front_center, front_right) are aligned parallel in a straight line.
+    Includes 2D Raycasting Distance Detection against field boundaries and internal obstacles.
     Rendered on top of all field objects (ZValue = 100.0).
     """
+
+    SENSOR_CONFIGS = {
+        'front_left':   {'rel_x': -0.6, 'rel_y': -1.0, 'angle': 0.0},
+        'front_center': {'rel_x':  0.0, 'rel_y': -1.0, 'angle': 0.0},
+        'front_right':  {'rel_x':  0.6, 'rel_y': -1.0, 'angle': 0.0},
+        'right_rear':   {'rel_x':  0.866, 'rel_y': 0.5, 'angle': 120.0},
+        'back_right':   {'rel_x':  0.342, 'rel_y': 0.94, 'angle': 160.0},
+        'back_left':    {'rel_x': -0.342, 'rel_y': 0.94, 'angle': -160.0},
+        'left_rear':    {'rel_x': -0.866, 'rel_y': 0.5, 'angle': -120.0}
+    }
+
     def __init__(self, x_cm: float = 100.0, y_cm: float = 50.0,
                  diameter_cm: float = 30.0, px_per_cm: float = 2.5,
                  color: str = "#e74c3c", **kwargs):
@@ -403,8 +415,111 @@ class RobotItem(BaseFieldItem):
 
     def boundingRect(self) -> QRectF:
         r_px = (self.diameter_cm / 2.0) * self.px_per_cm
-        margin = 40.0
+        margin = 350.0
         return QRectF(-r_px - margin, -r_px - margin, 2*r_px + 2*margin, 2*r_px + 2*margin)
+
+    def get_sensor_readouts(self) -> dict:
+        """
+        Calculate 2D Raycast distances for all active sensors on the robot against:
+        1. Outer field boundary walls
+        2. Field obstacles (StandCube, Wall, Cabinet, HomeBox, etc.)
+        """
+        readouts = {}
+        scene = self.scene()
+        if not scene:
+            return readouts
+
+        r_cm = self.diameter_cm / 2.0
+        rob_rot = self.rotation()
+        rob_x_cm = self.get_x_cm()
+        rob_y_cm = self.get_y_cm()
+
+        field_w_cm = getattr(scene, 'width_cm', 200.0)
+        field_h_cm = getattr(scene, 'height_cm', 400.0)
+        px_per_cm = self.px_per_cm if self.px_per_cm > 0 else 2.5
+
+        # 1. Collect all obstacle line segments in scene cm
+        segments = [
+            ((0.0, 0.0), (field_w_cm, 0.0), "Batas Lapangan (Atas)"),
+            ((field_w_cm, 0.0), (field_w_cm, field_h_cm), "Batas Lapangan (Kanan)"),
+            ((field_w_cm, field_h_cm), (0.0, field_h_cm), "Batas Lapangan (Bawah)"),
+            ((0.0, field_h_cm), (0.0, 0.0), "Batas Lapangan (Kiri)")
+        ]
+
+        for item in scene.items():
+            if isinstance(item, BaseFieldItem) and item != self:
+                rect = item.boundingRect()
+                c0 = item.mapToScene(rect.topLeft()) / px_per_cm
+                c1 = item.mapToScene(rect.topRight()) / px_per_cm
+                c2 = item.mapToScene(rect.bottomRight()) / px_per_cm
+                c3 = item.mapToScene(rect.bottomLeft()) / px_per_cm
+
+                p0 = (c0.x(), c0.y())
+                p1 = (c1.x(), c1.y())
+                p2 = (c2.x(), c2.y())
+                p3 = (c3.x(), c3.y())
+
+                name = getattr(item, 'name', 'Objek')
+                segments.append((p0, p1, name))
+                segments.append((p1, p2, name))
+                segments.append((p2, p3, name))
+                segments.append((p3, p0, name))
+
+        # 2. Perform raycast for each active sensor
+        for pos_key, cfg in self.SENSOR_CONFIGS.items():
+            stype = self.sensors.get(pos_key, 'none')
+            if stype == 'none':
+                readouts[pos_key] = {'type': 'none'}
+                continue
+
+            max_range_cm = 400.0 if stype == 'ultrasonic' else 150.0
+
+            loc_x_cm = cfg['rel_x'] * r_cm
+            loc_y_cm = cfg['rel_y'] * r_cm
+            sensor_angle = cfg['angle']
+
+            rot_rad = math.radians(rob_rot)
+            gx_cm = rob_x_cm + (loc_x_cm * math.cos(rot_rad) - loc_y_cm * math.sin(rot_rad))
+            gy_cm = rob_y_cm + (loc_x_cm * math.sin(rot_rad) + loc_y_cm * math.cos(rot_rad))
+
+            global_angle_deg = rob_rot + sensor_angle
+            angle_rad = math.radians(global_angle_deg - 90.0)
+            dx = math.cos(angle_rad)
+            dy = math.sin(angle_rad)
+
+            closest_dist = max_range_cm
+            hit_target = "Di Luar Jangkauan"
+            hit_px = gx_cm + dx * max_range_cm
+            hit_py = gy_cm + dy * max_range_cm
+
+            for (p1, p2, seg_name) in segments:
+                x1, y1 = p1
+                x2, y2 = p2
+
+                det = dx * (y2 - y1) - dy * (x2 - x1)
+                if abs(det) < 1e-6:
+                    continue
+
+                t = ((x1 - gx_cm) * (y2 - y1) - (y1 - gy_cm) * (x2 - x1)) / det
+                u = ((x1 - gx_cm) * dy - (y1 - gy_cm) * dx) / det
+
+                if t >= 0.05 and 0.0 <= u <= 1.0:
+                    if t < closest_dist:
+                        closest_dist = t
+                        hit_target = seg_name
+                        hit_px = gx_cm + dx * t
+                        hit_py = gy_cm + dy * t
+
+            readouts[pos_key] = {
+                'type': stype,
+                'distance_cm': round(closest_dist, 1),
+                'target_name': hit_target,
+                'start_cm': (gx_cm, gy_cm),
+                'hit_cm': (hit_px, hit_py),
+                'max_range_cm': max_range_cm
+            }
+
+        return readouts
 
     def paint(self, painter: QPainter, option, widget=None):
         r_px = (self.diameter_cm / 2.0) * self.px_per_cm
@@ -426,21 +541,11 @@ class RobotItem(BaseFieldItem):
         painter.drawPath(path)
 
         # 2. Render 7 Sensors on Robot Boundary
-        sensor_angles = {
-            'front_left': -35.0,
-            'front_center': 0.0,
-            'front_right': 35.0,
-            'right_rear': 120.0,
-            'back_right': 160.0,
-            'back_left': -160.0,
-            'left_rear': -120.0
-        }
-
-        for pos_key, angle_deg in sensor_angles.items():
+        for pos_key, cfg in self.SENSOR_CONFIGS.items():
             stype = self.sensors.get(pos_key, 'none')
-            rad = math.radians(angle_deg - 90.0)
-            xs = r_px * math.cos(rad)
-            ys = r_px * math.sin(rad)
+            xs = cfg['rel_x'] * r_px
+            ys = cfg['rel_y'] * r_px
+            angle_deg = cfg['angle']
 
             painter.save()
             painter.translate(xs, ys)
@@ -497,7 +602,46 @@ class RobotItem(BaseFieldItem):
 
             painter.restore()
 
-        # 3. Heading Direction Arrow (points forward towards 0 deg / top)
+        # 3. Render Live Distance Rays & Hit Dots on Canvas
+        readouts = self.get_sensor_readouts()
+        px_scale = self.px_per_cm if self.px_per_cm > 0 else 2.5
+
+        for pos_key, info in readouts.items():
+            if info.get('type') == 'none':
+                continue
+
+            dist = info.get('distance_cm', 0.0)
+            stype = info.get('type')
+            start_cm = info.get('start_cm')
+            hit_cm = info.get('hit_cm')
+
+            if start_cm and hit_cm:
+                start_px_scene = QPointF(start_cm[0] * px_scale, start_cm[1] * px_scale)
+                hit_px_scene = QPointF(hit_cm[0] * px_scale, hit_cm[1] * px_scale)
+
+                p_start = self.mapFromScene(start_px_scene)
+                p_hit = self.mapFromScene(hit_px_scene)
+
+                # Laser Ray Line
+                laser_color = QColor("#00cec9") if stype == 'ultrasonic' else QColor("#ff4757")
+                ray_pen = QPen(laser_color, 1.8, Qt.PenStyle.DashLine)
+                painter.setPen(ray_pen)
+                painter.drawLine(p_start, p_hit)
+
+                # Target Hit Dot Indicator
+                painter.setPen(QPen(QColor("#ffffff"), 1.0))
+                painter.setBrush(QBrush(laser_color))
+                painter.drawEllipse(p_hit, 4.0, 4.0)
+
+                # Distance Text Badge
+                painter.setFont(QFont("Consolas", 8, QFont.Weight.Bold))
+                txt = f"{dist:.1f}cm"
+                badge_rect = QRectF(p_hit.x() + 4, p_hit.y() - 10, 48, 14)
+                painter.fillRect(badge_rect, QColor(0, 0, 0, 180))
+                painter.setPen(QPen(QColor("#ffffff")))
+                painter.drawText(badge_rect, Qt.AlignmentFlag.AlignCenter, txt)
+
+        # 4. Heading Direction Arrow (points forward towards 0 deg / top)
         arrow_len = r_px * 0.85
         arrow_pen = QPen(QColor("#f1c40f"), 3.0, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
         painter.setPen(arrow_pen)
