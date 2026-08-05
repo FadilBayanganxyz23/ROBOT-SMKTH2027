@@ -737,27 +737,27 @@ class MainWindow(QMainWindow):
         layout.setSpacing(6)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        lbl_desc = QLabel("2 Sensor Garis di Bawah Sensor Depan (Opsional):")
+        lbl_desc = QLabel("2 Sensor Garis di Bawah Sensor Depan-Tengah (Opsional):")
         lbl_desc.setStyleSheet("color: #8b949e; font-size: 11px;")
         layout.addWidget(lbl_desc)
 
         chk_layout = QGridLayout()
         chk_layout.setSpacing(6)
 
-        self.chk_line_left = QCheckBox("Depan Kiri")
+        self.chk_line_left = QCheckBox("Center Kiri")
         self.chk_line_left.toggled.connect(self.on_line_sensor_toggled)
         chk_layout.addWidget(self.chk_line_left, 0, 0)
 
-        self.chk_line_right = QCheckBox("Depan Kanan")
+        self.chk_line_right = QCheckBox("Center Kanan")
         self.chk_line_right.toggled.connect(self.on_line_sensor_toggled)
         chk_layout.addWidget(self.chk_line_right, 0, 1)
 
         layout.addLayout(chk_layout)
 
         # Status & Readout
-        self.lbl_line_left_status = QLabel("• Depan Kiri: Nonaktif")
+        self.lbl_line_left_status = QLabel("• Center Kiri: Nonaktif")
         self.lbl_line_left_status.setStyleSheet("color: #484f58; font-size: 11px; padding-left: 4px;")
-        self.lbl_line_right_status = QLabel("• Depan Kanan: Nonaktif")
+        self.lbl_line_right_status = QLabel("• Center Kanan: Nonaktif")
         self.lbl_line_right_status.setStyleSheet("color: #484f58; font-size: 11px; padding-left: 4px;")
 
         st_layout = QVBoxLayout()
@@ -961,8 +961,8 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'chk_line_left') and hasattr(self, 'chk_line_right'):
             line_readouts = self.robot_item.get_line_sensor_readouts()
             for key, (chk, lbl, name_str) in [
-                ('line_left', (self.chk_line_left, self.lbl_line_left_status, 'Depan Kiri')),
-                ('line_right', (self.chk_line_right, self.lbl_line_right_status, 'Depan Kanan'))
+                ('line_left', (self.chk_line_left, self.lbl_line_left_status, 'Center Kiri')),
+                ('line_right', (self.chk_line_right, self.lbl_line_right_status, 'Center Kanan'))
             ]:
                 info = line_readouts.get(key, {})
                 installed = info.get('installed', False)
