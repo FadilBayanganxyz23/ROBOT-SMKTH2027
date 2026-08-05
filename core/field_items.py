@@ -359,15 +359,22 @@ class RobotItem(BaseFieldItem):
     """
 
     SENSOR_CONFIGS = {
-        'front_left':   {'rel_x': -0.6,   'rel_y': -1.0, 'angle': 0.0},
-        'front_center': {'rel_x':  0.0,   'rel_y': -1.0, 'angle': 0.0},
-        'front_right':  {'rel_x':  0.6,   'rel_y': -1.0, 'angle': 0.0},
-        'right_front':  {'rel_x':  0.866, 'rel_y': -0.5, 'angle': 60.0},
-        'right_rear':   {'rel_x':  0.866, 'rel_y':  0.5, 'angle': 120.0},
-        'back_right':   {'rel_x':  0.342, 'rel_y':  0.94, 'angle': 160.0},
-        'back_left':    {'rel_x': -0.342, 'rel_y':  0.94, 'angle': -160.0},
-        'left_rear':    {'rel_x': -0.866, 'rel_y':  0.5, 'angle': -120.0},
-        'left_front':   {'rel_x': -0.866, 'rel_y': -0.5, 'angle': -60.0}
+        # Front 3 Sensors (Parallel straight line facing 0° Forward)
+        'front_left':   {'rel_x': -0.6, 'rel_y': -1.0, 'angle': 0.0},
+        'front_center': {'rel_x':  0.0, 'rel_y': -1.0, 'angle': 0.0},
+        'front_right':  {'rel_x':  0.6, 'rel_y': -1.0, 'angle': 0.0},
+
+        # Right 2 Sensors (Parallel straight line facing +90° Right)
+        'right_front':  {'rel_x':  1.0, 'rel_y': -0.5, 'angle': 90.0},
+        'right_rear':   {'rel_x':  1.0, 'rel_y':  0.5, 'angle': 90.0},
+
+        # Back 2 Sensors (Parallel straight line facing 180° Backward)
+        'back_right':   {'rel_x':  0.5, 'rel_y':  1.0, 'angle': 180.0},
+        'back_left':    {'rel_x': -0.5, 'rel_y':  1.0, 'angle': 180.0},
+
+        # Left 2 Sensors (Parallel straight line facing -90° Left)
+        'left_rear':    {'rel_x': -1.0, 'rel_y':  0.5, 'angle': -90.0},
+        'left_front':   {'rel_x': -1.0, 'rel_y': -0.5, 'angle': -90.0}
     }
 
     def __init__(self, x_cm: float = 100.0, y_cm: float = 50.0,
