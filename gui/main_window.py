@@ -435,6 +435,7 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.build_robot_main_box())
         right_layout.addWidget(self.build_robot_wheels_box())
         right_layout.addWidget(self.build_robot_sensors_box())
+        right_layout.addWidget(self.build_robot_line_sensors_box())
         right_layout.addWidget(self.build_robot_actions_box())
         right_layout.addWidget(self.build_field_settings_box())
         right_layout.addStretch()
@@ -729,6 +730,44 @@ class MainWindow(QMainWindow):
 
         return box
 
+    def build_robot_line_sensors_box(self) -> QGroupBox:
+        """Create 2 Line Sensors (downward-facing) configuration & readout panel."""
+        box = QGroupBox("📏 Sensor Garis (Line Sensor)")
+        layout = QVBoxLayout(box)
+        layout.setSpacing(6)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        lbl_desc = QLabel("2 Sensor Garis di Depan-Tengah (Opsional):")
+        lbl_desc.setStyleSheet("color: #8b949e; font-size: 11px;")
+        layout.addWidget(lbl_desc)
+
+        chk_layout = QGridLayout()
+        chk_layout.setSpacing(6)
+
+        self.chk_line_left = QCheckBox("Depan Kiri")
+        self.chk_line_left.toggled.connect(self.on_line_sensor_toggled)
+        chk_layout.addWidget(self.chk_line_left, 0, 0)
+
+        self.chk_line_right = QCheckBox("Depan Kanan")
+        self.chk_line_right.toggled.connect(self.on_line_sensor_toggled)
+        chk_layout.addWidget(self.chk_line_right, 0, 1)
+
+        layout.addLayout(chk_layout)
+
+        # Status & Readout
+        self.lbl_line_left_status = QLabel("• Depan Kiri: Nonaktif")
+        self.lbl_line_left_status.setStyleSheet("color: #484f58; font-size: 11px; padding-left: 4px;")
+        self.lbl_line_right_status = QLabel("• Depan Kanan: Nonaktif")
+        self.lbl_line_right_status.setStyleSheet("color: #484f58; font-size: 11px; padding-left: 4px;")
+
+        st_layout = QVBoxLayout()
+        st_layout.setSpacing(2)
+        st_layout.addWidget(self.lbl_line_left_status)
+        st_layout.addWidget(self.lbl_line_right_status)
+        layout.addLayout(st_layout)
+
+        return box
+
     def build_robot_actions_box(self) -> QGroupBox:
         """Create Robot YAML Save/Load action buttons panel."""
         box = QGroupBox("💾 Simpan / Buka Robot")
@@ -815,6 +854,7 @@ class MainWindow(QMainWindow):
                     x_cm = r_cfg.get('x_cm', self.robot_item.get_x_cm())
                     y_cm = r_cfg.get('y_cm', self.robot_item.get_y_cm())
 
+                    line_cfg = r_cfg.get('line_sensors', {})
                     self.spn_robot_diam.setValue(diam)
                     self.spn_robot_rot.setValue(rot)
                     self.spn_robot_safety_margin.setValue(safety_m)
@@ -823,7 +863,15 @@ class MainWindow(QMainWindow):
                     self.robot_item.set_cm_pos(x_cm, y_cm)
                     self.robot_item.setRotation(rot)
                     self.robot_item.set_sensors(sensors_cfg)
+                    self.robot_item.set_line_sensors(line_cfg)
                     self.robot_item.set_wheel_config(w_count, w_diam)
+
+                    self.chk_line_left.blockSignals(True)
+                    self.chk_line_right.blockSignals(True)
+                    self.chk_line_left.setChecked(bool(line_cfg.get('line_left', False)))
+                    self.chk_line_right.setChecked(bool(line_cfg.get('line_right', False)))
+                    self.chk_line_left.blockSignals(False)
+                    self.chk_line_right.blockSignals(False)
 
                     self.cb_wheel_mode.blockSignals(True)
                     self.cb_wheel_mode.setCurrentIndex(0 if w_count == 4 else 1)
@@ -856,6 +904,17 @@ class MainWindow(QMainWindow):
         self.cb_sensor_type.blockSignals(True)
         self.cb_sensor_type.setCurrentIndex(stype_map.get(stype, 0))
         self.cb_sensor_type.blockSignals(False)
+
+    def on_line_sensor_toggled(self):
+        """Triggered when user checks or unchecks line sensor checkboxes."""
+        if not hasattr(self, 'robot_item') or not self.robot_item:
+            return
+        cfg = {
+            'line_left': self.chk_line_left.isChecked(),
+            'line_right': self.chk_line_right.isChecked()
+        }
+        self.robot_item.set_line_sensors(cfg)
+        self.update_sensor_readouts_ui()
 
     def on_sensor_type_changed(self, index: int):
         """Triggered when user installs/changes sensor type for selected position."""
@@ -897,6 +956,28 @@ class MainWindow(QMainWindow):
                 color = "#00cec9" if stype == 'ultrasonic' else "#ff6b6b"
                 lbl.setText(f"   {short} [{tag}]: {dist:.1f} cm \u2192 {target}")
                 lbl.setStyleSheet(f"color: {color}; font-size: 11px; font-weight: bold; padding-left: 12px;")
+
+        # Update 2 Line Sensors Status Readouts
+        if hasattr(self, 'chk_line_left') and hasattr(self, 'chk_line_right'):
+            line_readouts = self.robot_item.get_line_sensor_readouts()
+            for key, (chk, lbl, name_str) in [
+                ('line_left', (self.chk_line_left, self.lbl_line_left_status, 'Depan Kiri')),
+                ('line_right', (self.chk_line_right, self.lbl_line_right_status, 'Depan Kanan'))
+            ]:
+                info = line_readouts.get(key, {})
+                installed = info.get('installed', False)
+                if not installed:
+                    lbl.setText(f"• {name_str}: Nonaktif")
+                    lbl.setStyleSheet("color: #484f58; font-size: 11px; padding-left: 4px;")
+                else:
+                    detecting = info.get('detecting', False)
+                    target = info.get('target', '')
+                    if detecting:
+                        lbl.setText(f"• {name_str}: DETEKSI GARIS ({target})")
+                        lbl.setStyleSheet("color: #00b894; font-size: 11px; font-weight: bold; padding-left: 4px;")
+                    else:
+                        lbl.setText(f"• {name_str}: Aktif (Bebas)")
+                        lbl.setStyleSheet("color: #0984e3; font-size: 11px; padding-left: 4px;")
 
     def build_inspector_box(self) -> QGroupBox:
         """Create Selected Item Property Inspector panel."""
@@ -1377,6 +1458,7 @@ class MainWindow(QMainWindow):
         if r_cfg:
             self.spn_robot_diam.setValue(r_cfg.get('diameter_cm', 30.0))
             sensors_cfg = r_cfg.get('sensors', {})
+            line_cfg = r_cfg.get('line_sensors', {})
             wheels_cfg = r_cfg.get('wheels', {})
             w_count = wheels_cfg.get('count', 4)
             w_diam = wheels_cfg.get('diameter_mm', 100)
@@ -1390,6 +1472,7 @@ class MainWindow(QMainWindow):
                 px_per_cm=self.scene.px_per_cm,
                 color=r_cfg.get('color', '#e74c3c'),
                 sensors=sensors_cfg,
+                line_sensors=line_cfg,
                 wheels=wheels_cfg
             )
             self.robot_item.setRotation(r_cfg.get('rotation_deg', 0.0))
@@ -1397,6 +1480,15 @@ class MainWindow(QMainWindow):
             self.scene.addItem(self.robot_item)
             self.spn_robot_rot.setValue(r_cfg.get('rotation_deg', 0.0))
             self.spn_robot_safety_margin.setValue(safety_m)
+
+            # Sync Line Sensor Checkboxes
+            if hasattr(self, 'chk_line_left') and hasattr(self, 'chk_line_right'):
+                self.chk_line_left.blockSignals(True)
+                self.chk_line_right.blockSignals(True)
+                self.chk_line_left.setChecked(bool(line_cfg.get('line_left', False)))
+                self.chk_line_right.setChecked(bool(line_cfg.get('line_right', False)))
+                self.chk_line_left.blockSignals(False)
+                self.chk_line_right.blockSignals(False)
 
             # Update UI dropdowns & live readouts
             self.cb_wheel_mode.blockSignals(True)

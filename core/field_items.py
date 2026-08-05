@@ -377,6 +377,12 @@ class RobotItem(BaseFieldItem):
         'left_front':   {'rel_x': -1.0, 'rel_y': -0.5, 'angle': -90.0}
     }
 
+    # 2 Line Sensors: mounted at front center, facing downward to detect floor lines
+    LINE_SENSOR_CONFIGS = {
+        'line_left':  {'rel_x': -0.25, 'rel_y': -0.85},
+        'line_right': {'rel_x':  0.25, 'rel_y': -0.85},
+    }
+
     def __init__(self, x_cm: float = 100.0, y_cm: float = 50.0,
                  diameter_cm: float = 30.0, px_per_cm: float = 2.5,
                  color: str = "#e74c3c", **kwargs):
@@ -408,6 +414,16 @@ class RobotItem(BaseFieldItem):
         if 'sensors' in kwargs and isinstance(kwargs['sensors'], dict):
             self.set_sensors(kwargs['sensors'])
 
+        # 2 Line Sensors (downward-facing): True = installed, False = not installed
+        self.line_sensors = {
+            'line_left': False,
+            'line_right': False
+        }
+        if 'line_sensors' in kwargs and isinstance(kwargs['line_sensors'], dict):
+            for k in self.line_sensors:
+                if k in kwargs['line_sensors']:
+                    self.line_sensors[k] = bool(kwargs['line_sensors'][k])
+
         # Omni-wheel Configuration: count (3 or 4), diameter_mm (50 or 100)
         wheels_cfg = kwargs.get('wheels', {})
         if isinstance(wheels_cfg, dict):
@@ -432,6 +448,97 @@ class RobotItem(BaseFieldItem):
         self.wheel_diameter_mm = 100 if diameter_mm == 100 else 50
         self.prepareGeometryChange()
         self.update()
+
+    def set_line_sensors(self, config: dict):
+        """Set line sensor installation state from dict."""
+        if config:
+            for k in self.line_sensors:
+                if k in config:
+                    self.line_sensors[k] = bool(config[k])
+        self.prepareGeometryChange()
+        self.update()
+
+    def get_line_sensor_readouts(self) -> dict:
+        """
+        Check if each installed line sensor is currently over a floor line.
+        Detects: StandCube solatif tape, Cabinet reference lines, LineItem.
+        Returns {key: {'installed': bool, 'detecting': bool, 'target': str}}
+        """
+        readouts = {}
+        scene = self.scene()
+
+        for ls_key, cfg in self.LINE_SENSOR_CONFIGS.items():
+            installed = self.line_sensors.get(ls_key, False)
+            if not installed:
+                readouts[ls_key] = {'installed': False, 'detecting': False, 'target': ''}
+                continue
+
+            if not scene:
+                readouts[ls_key] = {'installed': True, 'detecting': False, 'target': ''}
+                continue
+
+            # Calculate world position of this sensor
+            r_cm = self.diameter_cm / 2.0
+            loc_x_cm = cfg['rel_x'] * r_cm
+            loc_y_cm = cfg['rel_y'] * r_cm
+            rot_rad = math.radians(self.rotation())
+            wx = self.get_x_cm() + (loc_x_cm * math.cos(rot_rad) - loc_y_cm * math.sin(rot_rad))
+            wy = self.get_y_cm() + (loc_x_cm * math.sin(rot_rad) + loc_y_cm * math.cos(rot_rad))
+
+            px_per_cm = self.px_per_cm if self.px_per_cm > 0 else 2.5
+            sensor_scene_pt = QPointF(wx * px_per_cm, wy * px_per_cm)
+
+            detecting = False
+            target_name = ''
+
+            for item in scene.items():
+                if item is self or not isinstance(item, BaseFieldItem):
+                    continue
+                itype = getattr(item, 'item_type', '')
+
+                if itype == 'line':
+                    # LineItem: full rectangle is a detectable line
+                    w_px = item.width_cm * px_per_cm
+                    h_px = item.height_cm * px_per_cm
+                    local_pt = item.mapFromScene(sensor_scene_pt)
+                    if 0 <= local_pt.x() <= w_px and 0 <= local_pt.y() <= h_px:
+                        detecting = True
+                        target_name = getattr(item, 'name', 'Garis')
+                        break
+
+                elif itype == 'stand_cube':
+                    # StandCube solatif tape: 2cm wide x 15cm tall, centered below cube body
+                    tape_w = getattr(item, 'tape_width_cm', 2.0) * px_per_cm
+                    tape_h = getattr(item, 'tape_length_cm', 15.0) * px_per_cm
+                    cube_w_px = item.width_cm * px_per_cm
+                    cube_h_px = item.height_cm * px_per_cm
+                    tape_x = (cube_w_px - tape_w) / 2.0
+                    tape_rect = QRectF(tape_x, cube_h_px, tape_w, tape_h)
+                    local_pt = item.mapFromScene(sensor_scene_pt)
+                    if tape_rect.contains(local_pt):
+                        detecting = True
+                        target_name = getattr(item, 'name', 'Stand Cube') + ' (Solatif)'
+                        break
+
+                elif itype == 'cabinet':
+                    # Cabinet 3 reference lines: 2cm x 15cm at midpoints 10, 25, 40 cm
+                    cab_w_px = item.width_cm * px_per_cm
+                    tape_w_px = getattr(item, 'tape_width_cm', 2.0) * px_per_cm
+                    tape_l_px = getattr(item, 'tape_length_cm', 15.0) * px_per_cm
+                    local_pt = item.mapFromScene(sensor_scene_pt)
+                    for mid_y_cm in [10.0, 25.0, 40.0]:
+                        mid_y_px = mid_y_cm * px_per_cm
+                        tape_rect = QRectF(cab_w_px, mid_y_px - tape_w_px / 2.0, tape_l_px, tape_w_px)
+                        if tape_rect.contains(local_pt):
+                            detecting = True
+                            target_name = getattr(item, 'name', 'Lemari') + ' (Referensi)'
+                            break
+                    if detecting:
+                        break
+
+            readouts[ls_key] = {'installed': True, 'detecting': detecting, 'target': target_name}
+
+        return readouts
 
     def set_safety_margin(self, margin_cm: float):
         self.safety_margin_cm = max(0.0, margin_cm)
@@ -832,6 +939,46 @@ class RobotItem(BaseFieldItem):
 
             painter.restore()
 
+        # 2b. Render 2 Line Sensors (front center, facing downward)
+        line_readouts = self.get_line_sensor_readouts()
+        for ls_key, ls_cfg in self.LINE_SENSOR_CONFIGS.items():
+            installed = self.line_sensors.get(ls_key, False)
+            lx = ls_cfg['rel_x'] * r_px
+            ly = ls_cfg['rel_y'] * r_px
+
+            painter.save()
+            painter.translate(lx, ly)
+
+            if installed:
+                ls_info = line_readouts.get(ls_key, {})
+                is_detecting = ls_info.get('detecting', False)
+
+                if is_detecting:
+                    # Detecting line — bright green glow
+                    painter.setPen(QPen(QColor("#00b894"), 1.5))
+                    painter.setBrush(QBrush(QColor("#00b894")))
+                else:
+                    # Installed but not detecting — dim gray module
+                    painter.setPen(QPen(QColor("#636e72"), 1.2))
+                    painter.setBrush(QBrush(QColor("#2d3436")))
+
+                # Line sensor module: small rectangle with LED dot
+                mod_rect = QRectF(-4.5, -3.0, 9.0, 6.0)
+                painter.drawRoundedRect(mod_rect, 1.5, 1.5)
+
+                # LED indicator dot
+                led_color = QColor("#55efc4") if is_detecting else QColor("#b2bec3")
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QBrush(led_color))
+                painter.drawEllipse(QPointF(0, 0), 1.8, 1.8)
+            else:
+                # Not installed — subtle empty slot indicator
+                painter.setPen(QPen(QColor(255, 255, 255, 80), 0.8, Qt.PenStyle.DotLine))
+                painter.setBrush(QBrush(QColor(0, 0, 0, 60)))
+                painter.drawEllipse(QPointF(0, 0), 2.0, 2.0)
+
+            painter.restore()
+
         # 3. Render Live Distance Rays & Hit Dots on Canvas
         readouts = self.get_sensor_readouts()
         px_scale = self.px_per_cm if self.px_per_cm > 0 else 2.5
@@ -905,5 +1052,6 @@ class RobotItem(BaseFieldItem):
                 'count': self.wheel_count,
                 'diameter_mm': self.wheel_diameter_mm
             },
-            'sensors': self.sensors.copy()
+            'sensors': self.sensors.copy(),
+            'line_sensors': self.line_sensors.copy()
         }
