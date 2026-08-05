@@ -540,6 +540,10 @@ class MainWindow(QMainWindow):
         if file_path:
             try:
                 robot_data = self.robot_item.to_dict()
+                # Remove field position coordinates for standalone robot specification
+                robot_data.pop('x_cm', None)
+                robot_data.pop('y_cm', None)
+
                 export_robot_to_yaml(file_path, robot_data)
                 QMessageBox.information(
                     self, "Sukses Simpan Robot",
