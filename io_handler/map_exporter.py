@@ -14,55 +14,12 @@ except ImportError:
 
 
 def export_to_yaml(file_path: str, map_data: dict) -> bool:
-    """
-    Export map configuration data dictionary to a YAML file.
-    
-    Structure of map_data:
-    {
-        'field': {
-            'width_m': float,
-            'height_m': float,
-            'width_cm': float,
-            'height_cm': float,
-            'width_mm': float,
-            'height_mm': float,
-            'scale_px_per_mm': float,
-            'scale_px_per_cm': float,
-            'width_px': int,
-            'height_px': int
-        },
-        'grid': {
-            'size_cm': float,
-            'snap_enabled': bool
-        },
-        'robot': {
-            'sides': int,
-            'diameter_cm': float,
-            'x_cm': float,
-            'y_cm': float,
-            'rotation_deg': float,
-            'color': str
-        },
-        'objects': [
-            {
-                'type': str,  # 'home_box', 'stand_cube', 'wall', 'line', 'cabinet'
-                'name': str,
-                'x_cm': float,
-                'y_cm': float,
-                'width_cm': float,
-                'height_cm': float,
-                'rotation_deg': float,
-                'color': str
-            }, ...
-        ]
-    }
-    """
     if HAS_YAML:
         with open(file_path, 'w', encoding='utf-8') as f:
             yaml.dump(map_data, f, default_flow_style=False, sort_keys=False, indent=2)
         return True
     else:
-        # Fallback simple manual YAML writer if pyyaml is not installed
+        # Fallback simple manual YAML writer
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write("# Field Map Configuration\n")
             f.write("field:\n")
@@ -73,7 +30,12 @@ def export_to_yaml(file_path: str, map_data: dict) -> bool:
                 f.write(f"  {k}: {v}\n")
             f.write("\nrobot:\n")
             for k, v in map_data.get('robot', {}).items():
-                f.write(f"  {k}: {v}\n")
+                if isinstance(v, dict):
+                    f.write(f"  {k}:\n")
+                    for sk, sv in v.items():
+                        f.write(f"    {sk}: {sv}\n")
+                else:
+                    f.write(f"  {k}: {v}\n")
             f.write("\nobjects:\n")
             for obj in map_data.get('objects', []):
                 f.write("  - ")
@@ -98,40 +60,56 @@ def import_from_yaml(file_path: str) -> dict:
             data = yaml.safe_load(f)
             return data if data else {}
     else:
-        # Basic parsing fallback
-        import json
-        # If pyyaml isn't present, try simple parser
         data = {'field': {}, 'grid': {}, 'robot': {}, 'objects': []}
-        # Standard pyyaml will be installed in our environment
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        # Minimal line parser if needed
         current_section = None
+        current_sub_sec = None
         current_obj = None
         for line in content.splitlines():
             line_str = line.strip()
             if not line_str or line_str.startswith("#"):
                 continue
-            if line_str.endswith(":") and not line_str.startswith("-"):
+            if line_str.endswith(":") and not line_str.startswith("-") and not line.startswith("  "):
                 sec = line_str[:-1].strip()
                 if sec in ['field', 'grid', 'robot', 'objects']:
                     current_section = sec
+                    current_sub_sec = None
                 continue
-            if current_section == 'objects' and line_str.startswith("-"):
-                current_obj = {}
-                data['objects'].append(current_obj)
-                kv = line_str[1:].strip()
-                if ":" in kv:
-                    k, v = kv.split(":", 1)
-                    current_obj[k.strip()] = _parse_val(v.strip())
-            elif current_section == 'objects' and current_obj is not None:
-                if ":" in line_str:
+
+            if current_section == 'robot':
+                if line.startswith("    ") and ":" in line_str and current_sub_sec:
+                    k, v = line_str.split(":", 1)
+                    if current_sub_sec not in data['robot']:
+                        data['robot'][current_sub_sec] = {}
+                    data['robot'][current_sub_sec][k.strip()] = _parse_val(v.strip())
+                elif line.startswith("  ") and ":" in line_str:
+                    k, v = line_str.split(":", 1)
+                    v_str = v.strip()
+                    if v_str == "":
+                        current_sub_sec = k
+                        data['robot'][current_sub_sec] = {}
+                    else:
+                        current_sub_sec = None
+                        data['robot'][k] = _parse_val(v_str)
+
+            elif current_section == 'objects':
+                if line_str.startswith("-"):
+                    current_obj = {}
+                    data['objects'].append(current_obj)
+                    kv = line_str[1:].strip()
+                    if ":" in kv:
+                        k, v = kv.split(":", 1)
+                        current_obj[k.strip()] = _parse_val(v.strip())
+                elif current_obj is not None and ":" in line_str:
                     k, v = line_str.split(":", 1)
                     current_obj[k.strip()] = _parse_val(v.strip())
-            elif current_section in ['field', 'grid', 'robot']:
+
+            elif current_section in ['field', 'grid']:
                 if ":" in line_str:
                     k, v = line_str.split(":", 1)
                     data[current_section][k.strip()] = _parse_val(v.strip())
+
         return data
 
 
@@ -182,9 +160,13 @@ def import_robot_from_yaml(file_path: str) -> dict:
     if HAS_YAML:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
-            if isinstance(data, dict) and 'robot' in data:
-                return data['robot']
-            return data if data else {}
+            if isinstance(data, dict):
+                if 'robot' in data and isinstance(data['robot'], dict):
+                    return data['robot']
+                return data
+            return {}
     else:
         full_data = import_from_yaml(file_path)
-        return full_data.get('robot', full_data)
+        if 'robot' in full_data and isinstance(full_data['robot'], dict) and full_data['robot']:
+            return full_data['robot']
+        return full_data
