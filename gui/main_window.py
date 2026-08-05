@@ -414,79 +414,103 @@ class MainWindow(QMainWindow):
         self.lbl_robot_pos.setObjectName("highlightVal")
         grid.addWidget(self.lbl_robot_pos, 3, 0, 1, 2)
 
-        # --- 9 Sensor Mount Positions Panel ---
-        lbl_sensors_title = QLabel("📡 Konfigurasi 9 Sensor Robot:")
-        lbl_sensors_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 6px;")
+        # --- Simplified 9 Sensor Configuration Panel ---
+        lbl_sensors_title = QLabel("📡 Konfigurasi Sensor Robot:")
+        lbl_sensors_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 8px;")
         grid.addWidget(lbl_sensors_title, 4, 0, 1, 2)
 
-        self.sensor_combos = {}
-        self.sensor_readout_labels = {}
-        sensor_list = [
-            ('front_left', 'Depan Kiri:'),
-            ('front_center', 'Depan Tengah:'),
-            ('front_right', 'Depan Kanan:'),
-            ('left_front', 'Kiri Depan:'),
-            ('left_rear', 'Kiri Belakang:'),
-            ('back_left', 'Belakang Kiri:'),
-            ('back_right', 'Belakang Kanan:'),
-            ('right_rear', 'Kanan Belakang:'),
-            ('right_front', 'Kanan Depan:')
+        # Dropdown 1: Select Sensor Position
+        grid.addWidget(QLabel("Pilih Posisi Sensor:"), 5, 0)
+        self.cb_sensor_pos = QComboBox()
+        self.sensor_pos_keys = [
+            ('front_left', '📍 Depan Kiri'),
+            ('front_center', '📍 Depan Tengah'),
+            ('front_right', '📍 Depan Kanan'),
+            ('left_front', '📍 Kiri Depan'),
+            ('left_rear', '📍 Kiri Belakang'),
+            ('back_left', '📍 Belakang Kiri'),
+            ('back_right', '📍 Belakang Kanan'),
+            ('right_rear', '📍 Kanan Belakang'),
+            ('right_front', '📍 Kanan Depan')
         ]
+        for key, label_str in self.sensor_pos_keys:
+            self.cb_sensor_pos.addItem(label_str, userData=key)
+        self.cb_sensor_pos.currentIndexChanged.connect(self.on_sensor_pos_changed)
+        grid.addWidget(self.cb_sensor_pos, 5, 1)
 
-        sensor_options = ["❌ Tidak Dipasang", "📡 Ultrasonic (US)", "🔴 Infrared (IR)"]
+        # Dropdown 2: Select Installed Sensor Type
+        grid.addWidget(QLabel("Pasang Sensor:"), 6, 0)
+        self.cb_sensor_type = QComboBox()
+        self.cb_sensor_type.addItems([
+            "❌ Tidak Dipasang",
+            "📡 Ultrasonic (US)",
+            "🔴 Infrared (IR)"
+        ])
+        self.cb_sensor_type.currentIndexChanged.connect(self.on_sensor_type_changed)
+        grid.addWidget(self.cb_sensor_type, 6, 1)
 
-        row = 5
-        for pos_key, pos_label in sensor_list:
-            grid.addWidget(QLabel(pos_label), row, 0)
+        # Live Sensor Status & Readout Summary
+        lbl_summary_title = QLabel("📊 Status & Hasil Ukur Sensor:")
+        lbl_summary_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 8px;")
+        grid.addWidget(lbl_summary_title, 7, 0, 1, 2)
 
-            combo_layout = QVBoxLayout()
-            combo_layout.setSpacing(2)
+        self.sensor_summary_labels = {}
+        row = 8
+        st_layout = QVBoxLayout()
+        st_layout.setSpacing(3)
 
-            cb = QComboBox()
-            cb.addItems(sensor_options)
-            cb.setCurrentIndex(0)
-            cb.currentIndexChanged.connect(lambda idx, k=pos_key: self.on_sensor_changed(k, idx))
-            combo_layout.addWidget(cb)
+        for key, label_str in self.sensor_pos_keys:
+            lbl = QLabel(f"{label_str}: Nonaktif")
+            lbl.setStyleSheet("color: #8b949e; font-size: 11px;")
+            st_layout.addWidget(lbl)
+            self.sensor_summary_labels[key] = (label_str, lbl)
 
-            lbl_readout = QLabel("Status: Nonaktif")
-            lbl_readout.setStyleSheet("color: #8b949e; font-size: 11px;")
-            combo_layout.addWidget(lbl_readout)
-
-            grid.addLayout(combo_layout, row, 1)
-
-            self.sensor_combos[pos_key] = cb
-            self.sensor_readout_labels[pos_key] = lbl_readout
-            row += 1
+        grid.addLayout(st_layout, 8, 0, 1, 2)
 
         return box
 
-    def on_sensor_changed(self, pos_key: str, index: int):
+    def on_sensor_pos_changed(self, index: int):
+        """Triggered when user selects a different sensor position in dropdown."""
+        if not hasattr(self, 'robot_item') or not self.robot_item:
+            return
+        pos_key = self.cb_sensor_pos.currentData()
+        stype = self.robot_item.sensors.get(pos_key, 'none')
+        stype_map = {'none': 0, 'ultrasonic': 1, 'infrared': 2}
+
+        self.cb_sensor_type.blockSignals(True)
+        self.cb_sensor_type.setCurrentIndex(stype_map.get(stype, 0))
+        self.cb_sensor_type.blockSignals(False)
+
+    def on_sensor_type_changed(self, index: int):
+        """Triggered when user installs/changes sensor type for selected position."""
+        if not hasattr(self, 'robot_item') or not self.robot_item:
+            return
+        pos_key = self.cb_sensor_pos.currentData()
         stypes = ['none', 'ultrasonic', 'infrared']
         stype = stypes[index] if 0 <= index < len(stypes) else 'none'
-        if self.robot_item:
-            self.robot_item.sensors[pos_key] = stype
-            self.robot_item.update()
-            self.update_sensor_readouts_ui()
+
+        self.robot_item.sensors[pos_key] = stype
+        self.robot_item.update()
+        self.update_sensor_readouts_ui()
 
     def update_sensor_readouts_ui(self):
         """Update live sensor distance readouts in sidebar panel."""
         if not hasattr(self, 'robot_item') or not self.robot_item:
             return
         readouts = self.robot_item.get_sensor_readouts()
-        for pos_key, label_widget in self.sensor_readout_labels.items():
+        for pos_key, (name_str, lbl) in self.sensor_summary_labels.items():
             info = readouts.get(pos_key, {})
             stype = info.get('type', 'none')
             if stype == 'none':
-                label_widget.setText("Status: Nonaktif")
-                label_widget.setStyleSheet("color: #8b949e; font-size: 11px;")
+                lbl.setText(f"{name_str}: Nonaktif")
+                lbl.setStyleSheet("color: #8b949e; font-size: 11px;")
             else:
                 dist = info.get('distance_cm', 0.0)
                 target = info.get('target_name', 'Batas')
-                label_widget.setText(f"📏 {dist:.1f} cm ({target})")
-                if stype == 'ultrasonic':
-                    label_widget.setStyleSheet("color: #00cec9; font-weight: bold; font-size: 11px;")
-                else:
-                    label_widget.setStyleSheet("color: #ff4757; font-weight: bold; font-size: 11px;")
+                icon = "📡 US" if stype == 'ultrasonic' else "🔴 IR"
+                color_code = "#00cec9" if stype == 'ultrasonic' else "#ff4757"
+                lbl.setText(f"{name_str} [{icon}]: <b>{dist:.1f} cm</b> ({target})")
+                lbl.setStyleSheet(f"color: {color_code}; font-size: 11px;")
 
     def build_inspector_box(self) -> QGroupBox:
         """Create Selected Item Property Inspector panel."""
@@ -974,13 +998,9 @@ class MainWindow(QMainWindow):
             self.scene.addItem(self.robot_item)
             self.spn_robot_rot.setValue(r_cfg.get('rotation_deg', 0.0))
 
-            # Update UI dropdowns
-            stype_map = {'none': 0, 'ultrasonic': 1, 'infrared': 2}
-            for pos_key, combo in self.sensor_combos.items():
-                stype = sensors_cfg.get(pos_key, 'none')
-                combo.blockSignals(True)
-                combo.setCurrentIndex(stype_map.get(stype, 0))
-                combo.blockSignals(False)
+            # Update UI dropdown & live readouts
+            self.on_sensor_pos_changed(self.cb_sensor_pos.currentIndex())
+            self.update_sensor_readouts_ui()
 
         # Load Objects
         for obj in data.get('objects', []):
