@@ -410,7 +410,7 @@ class MainWindow(QMainWindow):
         self.spn_robot_safety_margin = QDoubleSpinBox()
         self.spn_robot_safety_margin.setRange(0.0, 100.0)
         self.spn_robot_safety_margin.setSingleStep(1.0)
-        self.spn_robot_safety_margin.setValue(5.0)
+        self.spn_robot_safety_margin.setValue(7.0)
         self.spn_robot_safety_margin.valueChanged.connect(self.on_safety_margin_changed)
         grid.addWidget(self.spn_robot_safety_margin, 1, 1)
 

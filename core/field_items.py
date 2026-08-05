@@ -417,8 +417,8 @@ class RobotItem(BaseFieldItem):
             self.wheel_count = 4
             self.wheel_diameter_mm = 100
 
-        # Safety Clearance Margin (cm)
-        self.safety_margin_cm = max(0.0, float(kwargs.get('safety_margin_cm', 5.0)))
+        # Safety Clearance Margin (cm) - Default 7.0 cm
+        self.safety_margin_cm = max(0.0, float(kwargs.get('safety_margin_cm', 7.0)))
 
     def set_sensors(self, sensors_dict: dict):
         if sensors_dict:
@@ -579,7 +579,8 @@ class RobotItem(BaseFieldItem):
     def check_safety_collision(self) -> bool:
         """
         Check if the robot's safety clearance zone intersects any physical obstacle
-        (Wall, Stand Cube, Cabinet, or Outer Field Boundary Walls).
+        (Wall, Stand Cube body, Cabinet body, or Outer Field Boundary Walls).
+        Reference solatif lines on Stand Cube & Cabinet are ignored.
         Returns True if collision / safety distance violation occurs.
         """
         if self.safety_margin_cm <= 0 or not self.scene():
@@ -588,18 +589,17 @@ class RobotItem(BaseFieldItem):
         r_safe_cm = (self.diameter_cm / 2.0) + self.safety_margin_cm
         rob_x_cm = self.get_x_cm()
         rob_y_cm = self.get_y_cm()
+        scene = self.scene()
 
         # 1. Check against Field Outer Boundary Walls
-        scene = self.scene()
-        if hasattr(scene, 'field_width_m') and hasattr(scene, 'field_height_m'):
-            field_w_cm = scene.field_width_m * 100.0
-            field_h_cm = scene.field_height_m * 100.0
+        field_w_cm = getattr(scene, 'width_cm', 200.0)
+        field_h_cm = getattr(scene, 'height_cm', 400.0)
 
-            if (rob_x_cm - r_safe_cm <= 0 or rob_x_cm + r_safe_cm >= field_w_cm or
-                rob_y_cm - r_safe_cm <= 0 or rob_y_cm + r_safe_cm >= field_h_cm):
-                return True
+        if (rob_x_cm - r_safe_cm <= 0.0 or rob_x_cm + r_safe_cm >= field_w_cm or
+            rob_y_cm - r_safe_cm <= 0.0 or rob_y_cm + r_safe_cm >= field_h_cm):
+            return True
 
-        # 2. Check against Field Items (Wall, StandCube, Cabinet)
+        # 2. Check against Field Items (Wall, StandCube body, Cabinet body)
         for item in scene.items():
             if item is self or not getattr(item, 'isVisible', lambda: False)():
                 continue
@@ -610,15 +610,19 @@ class RobotItem(BaseFieldItem):
 
             w_cm = getattr(item, 'width_cm', 0.0)
             h_cm = getattr(item, 'height_cm', 0.0)
+            if w_cm <= 0 or h_cm <= 0:
+                continue
+
             ix_cm = getattr(item, 'get_x_cm', lambda: 0.0)()
             iy_cm = getattr(item, 'get_y_cm', lambda: 0.0)()
             rot_deg = getattr(item, 'rotation', lambda: 0.0)()
 
+            # Physical body rectangle local corners span (0,0) to (w_cm, h_cm)
             corners_local = [
-                (-w_cm / 2.0, -h_cm / 2.0),
-                ( w_cm / 2.0, -h_cm / 2.0),
-                ( w_cm / 2.0,  h_cm / 2.0),
-                (-w_cm / 2.0,  h_cm / 2.0)
+                (0.0, 0.0),
+                (w_cm, 0.0),
+                (w_cm, h_cm),
+                (0.0, h_cm)
             ]
             rot_rad = math.radians(rot_deg)
             cos_r = math.cos(rot_rad)
