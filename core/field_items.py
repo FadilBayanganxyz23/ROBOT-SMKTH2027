@@ -452,11 +452,21 @@ class RobotItem(BaseFieldItem):
 
         for item in scene.items():
             if isinstance(item, BaseFieldItem) and item != self:
-                rect = item.boundingRect()
-                c0 = item.mapToScene(rect.topLeft()) / px_per_cm
-                c1 = item.mapToScene(rect.topRight()) / px_per_cm
-                c2 = item.mapToScene(rect.bottomRight()) / px_per_cm
-                c3 = item.mapToScene(rect.bottomLeft()) / px_per_cm
+                item_type = getattr(item, 'item_type', '')
+
+                # Skip non-detectable items: Home Area (home_box) and Manual Lines (line)
+                if item_type in ('home_box', 'line'):
+                    continue
+
+                # For solid obstacles (StandCube, Cabinet, Wall), use main body rect (excluding floor tape lines)
+                w_px = item.width_cm * px_per_cm
+                h_px = item.height_cm * px_per_cm
+                body_rect = QRectF(0, 0, w_px, h_px)
+
+                c0 = item.mapToScene(body_rect.topLeft()) / px_per_cm
+                c1 = item.mapToScene(body_rect.topRight()) / px_per_cm
+                c2 = item.mapToScene(body_rect.bottomRight()) / px_per_cm
+                c3 = item.mapToScene(body_rect.bottomLeft()) / px_per_cm
 
                 p0 = (c0.x(), c0.y())
                 p1 = (c1.x(), c1.y())
