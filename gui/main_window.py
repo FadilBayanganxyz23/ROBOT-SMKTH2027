@@ -1035,6 +1035,31 @@ class MainWindow(QMainWindow):
         self.spn_item_rot.valueChanged.connect(self.on_inspector_changed)
         grid.addWidget(self.spn_item_rot, 5, 1)
 
+        # Stand Cube Solatif Line Length (cm) [Dynamic]
+        self.lbl_tape_len = QLabel("Garis Solatif (cm):")
+        self.spn_tape_len = QDoubleSpinBox()
+        self.spn_tape_len.setRange(1.0, 200.0)
+        self.spn_tape_len.setSingleStep(1.0)
+        self.spn_tape_len.setValue(15.0)
+        self.spn_tape_len.setEnabled(False)
+        self.spn_tape_len.valueChanged.connect(self.on_inspector_changed)
+        grid.addWidget(self.lbl_tape_len, 6, 0)
+        grid.addWidget(self.spn_tape_len, 6, 1)
+        self.lbl_tape_len.hide()
+        self.spn_tape_len.hide()
+
+        # Cabinet Tier Count [Dynamic]
+        self.lbl_tier_count = QLabel("Jumlah Tingkat:")
+        self.spn_tier_count = QSpinBox()
+        self.spn_tier_count.setRange(1, 10)
+        self.spn_tier_count.setValue(3)
+        self.spn_tier_count.setEnabled(False)
+        self.spn_tier_count.valueChanged.connect(self.on_inspector_changed)
+        grid.addWidget(self.lbl_tier_count, 7, 0)
+        grid.addWidget(self.spn_tier_count, 7, 1)
+        self.lbl_tier_count.hide()
+        self.spn_tier_count.hide()
+
         # Quick Preset Rotation Buttons (Horizontal / Vertikal / Miring)
         rot_box = QHBoxLayout()
         rot_box.setSpacing(4)
@@ -1043,14 +1068,14 @@ class MainWindow(QMainWindow):
             btn_r.setStyleSheet("padding: 4px; font-size: 11px;")
             btn_r.clicked.connect(lambda checked, a=angle: self.set_item_rotation_preset(a))
             rot_box.addWidget(btn_r)
-        grid.addLayout(rot_box, 6, 0, 1, 2)
+        grid.addLayout(rot_box, 8, 0, 1, 2)
 
         # Delete Item Button
         self.btn_delete_item = QPushButton("🗑️ Hapus Objek")
         self.btn_delete_item.setObjectName("dangerBtn")
         self.btn_delete_item.setEnabled(False)
         self.btn_delete_item.clicked.connect(self.delete_selected_item)
-        grid.addWidget(self.btn_delete_item, 7, 0, 1, 2)
+        grid.addWidget(self.btn_delete_item, 9, 0, 1, 2)
 
         return box
 
@@ -1212,6 +1237,8 @@ class MainWindow(QMainWindow):
         self.spn_item_w.blockSignals(True)
         self.spn_item_h.blockSignals(True)
         self.spn_item_rot.blockSignals(True)
+        self.spn_tape_len.blockSignals(True)
+        self.spn_tier_count.blockSignals(True)
 
         self.spn_item_x.setValue(item.get_x_cm())
         self.spn_item_y.setValue(item.get_y_cm())
@@ -1219,11 +1246,37 @@ class MainWindow(QMainWindow):
         self.spn_item_h.setValue(item.height_cm)
         self.spn_item_rot.setValue(item.rotation())
 
+        if item.item_type == 'stand_cube':
+            self.lbl_tape_len.show()
+            self.spn_tape_len.show()
+            self.spn_tape_len.setEnabled(True)
+            self.spn_tape_len.setValue(getattr(item, 'tape_length_cm', 15.0))
+            self.lbl_tier_count.hide()
+            self.spn_tier_count.hide()
+            self.spn_tier_count.setEnabled(False)
+        elif item.item_type == 'cabinet':
+            self.lbl_tier_count.show()
+            self.spn_tier_count.show()
+            self.spn_tier_count.setEnabled(True)
+            self.spn_tier_count.setValue(getattr(item, 'tier_count', 3))
+            self.lbl_tape_len.hide()
+            self.spn_tape_len.hide()
+            self.spn_tape_len.setEnabled(False)
+        else:
+            self.lbl_tape_len.hide()
+            self.spn_tape_len.hide()
+            self.spn_tape_len.setEnabled(False)
+            self.lbl_tier_count.hide()
+            self.spn_tier_count.hide()
+            self.spn_tier_count.setEnabled(False)
+
         self.spn_item_x.blockSignals(False)
         self.spn_item_y.blockSignals(False)
         self.spn_item_w.blockSignals(False)
         self.spn_item_h.blockSignals(False)
         self.spn_item_rot.blockSignals(False)
+        self.spn_tape_len.blockSignals(False)
+        self.spn_tier_count.blockSignals(False)
 
         self.spn_item_x.setEnabled(True)
         self.spn_item_y.setEnabled(True)
@@ -1239,6 +1292,12 @@ class MainWindow(QMainWindow):
         self.spn_item_w.setEnabled(False)
         self.spn_item_h.setEnabled(False)
         self.spn_item_rot.setEnabled(False)
+        self.spn_tape_len.setEnabled(False)
+        self.spn_tier_count.setEnabled(False)
+        self.lbl_tape_len.hide()
+        self.spn_tape_len.hide()
+        self.lbl_tier_count.hide()
+        self.spn_tier_count.hide()
         self.btn_delete_item.setEnabled(False)
 
     def on_inspector_changed(self):
@@ -1255,6 +1314,18 @@ class MainWindow(QMainWindow):
         item.width_cm = w_cm
         item.height_cm = h_cm
         item.setRotation(rot)
+
+        if item.item_type == 'stand_cube':
+            if hasattr(item, 'set_tape_length'):
+                item.set_tape_length(self.spn_tape_len.value())
+        elif item.item_type == 'cabinet':
+            if hasattr(item, 'set_tiers'):
+                # When tier_count changes, set_tiers updates height_cm as well
+                item.set_tiers(self.spn_tier_count.value())
+                self.spn_item_h.blockSignals(True)
+                self.spn_item_h.setValue(item.height_cm)
+                self.spn_item_h.blockSignals(False)
+
         item.prepareGeometryChange()
         item.update()
 
@@ -1298,13 +1369,16 @@ class MainWindow(QMainWindow):
         if o_type == 'home_box':
             item = HomeBoxItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
         elif o_type == 'stand_cube':
-            item = StandCubeItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
+            tape_len = c_data.get('tape_length_cm', 15.0)
+            item = StandCubeItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tape_length_cm=tape_len, px_per_cm=self.scene.px_per_cm)
         elif o_type == 'wall':
             item = WallItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
         elif o_type == 'line':
             item = LineItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
         elif o_type == 'cabinet':
-            item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
+            t_cnt = c_data.get('tier_count', 3)
+            t_hts = c_data.get('tier_heights', [])
+            item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tier_count=t_cnt, tier_heights=t_hts, px_per_cm=self.scene.px_per_cm)
 
         if item:
             item.setRotation(rot)
@@ -1516,13 +1590,16 @@ class MainWindow(QMainWindow):
             if o_type == 'home_box':
                 item = HomeBoxItem(x_cm=x, y_cm=y, px_per_cm=self.scene.px_per_cm)
             elif o_type == 'stand_cube':
-                item = StandCubeItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
+                tape_len = obj.get('tape_length_cm', 15.0)
+                item = StandCubeItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tape_length_cm=tape_len, px_per_cm=self.scene.px_per_cm)
             elif o_type == 'wall':
                 item = WallItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
             elif o_type == 'line':
                 item = LineItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
             elif o_type == 'cabinet':
-                item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, px_per_cm=self.scene.px_per_cm)
+                t_cnt = obj.get('tier_count', 3)
+                t_hts = obj.get('tier_heights', [])
+                item = CabinetItem(name=name, x_cm=x, y_cm=y, width_cm=w, height_cm=h, tier_count=t_cnt, tier_heights=t_hts, px_per_cm=self.scene.px_per_cm)
 
             if item:
                 item.setRotation(rot)

@@ -176,7 +176,7 @@ class HomeBoxItem(RectFieldItem):
 
 class StandCubeItem(BaseFieldItem):
     """
-    15x15 cm Stand cube obstacle item with 15x2 cm VERTICAL solatif line located in front of the cube.
+    Stand cube obstacle item with customizable width, height, and front vertical solatif line length.
     """
     def __init__(self, name: str = "Stand Cube", x_cm: float = 80.0, y_cm: float = 100.0,
                  width_cm: float = 15.0, height_cm: float = 15.0, px_per_cm: float = 2.5, **kwargs):
@@ -190,14 +190,19 @@ class StandCubeItem(BaseFieldItem):
             px_per_cm=px_per_cm,
             color="#e67e22"
         )
-        self.tape_length_cm = 15.0   # Panjang garis vertikal 15 cm
-        self.tape_width_cm = 2.0     # Lebar/ketebalan garis 2 cm
+        self.tape_length_cm = max(1.0, float(kwargs.get('tape_length_cm', 15.0)))
+        self.tape_width_cm = 2.0  # Lebar/ketebalan garis 2 cm
+
+    def set_tape_length(self, tape_len_cm: float):
+        self.tape_length_cm = max(1.0, tape_len_cm)
+        self.prepareGeometryChange()
+        self.update()
 
     def boundingRect(self) -> QRectF:
         cube_w_px = self.width_cm * self.px_per_cm
         cube_h_px = self.height_cm * self.px_per_cm
         tape_h_px = self.tape_length_cm * self.px_per_cm
-        
+
         margin = 4.0
         return QRectF(-margin, -margin, cube_w_px + 2*margin, (cube_h_px + tape_h_px) + 2*margin)
 
@@ -206,11 +211,11 @@ class StandCubeItem(BaseFieldItem):
 
         cube_w_px = self.width_cm * self.px_per_cm
         cube_h_px = self.height_cm * self.px_per_cm
-        tape_w_px = self.tape_width_cm * self.px_per_cm     # Lebar 2 cm
-        tape_h_px = self.tape_length_cm * self.px_per_cm    # Panjang vertikal 15 cm
-        tape_x_px = (cube_w_px - tape_w_px) / 2.0          # Berada tepat di tengah (center)
+        tape_w_px = self.tape_width_cm * self.px_per_cm
+        tape_h_px = self.tape_length_cm * self.px_per_cm
+        tape_x_px = (cube_w_px - tape_w_px) / 2.0
 
-        # 1. Render 15x15 cm Stand Cube Block
+        # 1. Render Stand Cube Block
         cube_rect = QRectF(0, 0, cube_w_px, cube_h_px)
         fill_color = QColor(self.item_color)
         fill_color.setAlpha(200)
@@ -221,10 +226,10 @@ class StandCubeItem(BaseFieldItem):
         painter.setBrush(QBrush(fill_color))
         painter.drawRoundedRect(cube_rect, 3.0, 3.0)
 
-        # 2. Render 15x2 cm Vertical Solatif Line extending forward/down from front of cube
+        # 2. Render Vertical Solatif Line extending forward/down from front of cube
         tape_rect = QRectF(tape_x_px, cube_h_px, tape_w_px, tape_h_px)
         painter.setPen(QPen(QColor("#000000"), 1.2))
-        painter.setBrush(QBrush(QColor(30, 30, 30, 230)))  # Dark solatif line
+        painter.setBrush(QBrush(QColor(30, 30, 30, 230)))
         painter.drawRect(tape_rect)
 
         # Draw selection handles if selected
@@ -239,6 +244,11 @@ class StandCubeItem(BaseFieldItem):
             ]
             for h in handles:
                 painter.drawRect(QRectF(h.x() - handle_size/2, h.y() - handle_size/2, handle_size, handle_size))
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['tape_length_cm'] = round(self.tape_length_cm, 2)
+        return d
 
 
 class WallItem(RectFieldItem):
@@ -260,9 +270,9 @@ class WallItem(RectFieldItem):
 
 class CabinetItem(BaseFieldItem):
     """
-    15x45 cm Cabinet / Lemari obstacle item.
-    Segment pattern: 5cm - 10cm - 5cm - 10cm - 5cm - 10cm (Total length 45 cm).
-    Each 10cm segment has a 2x15cm reference solatif line at its midpoint extending forward.
+    Cabinet / Lemari obstacle item with customizable dimensions and shelf tiers.
+    User can configure the number of tiers and shelf heights.
+    No reference lines.
     """
     def __init__(self, name: str = "Lemari", x_cm: float = 120.0, y_cm: float = 250.0,
                  width_cm: float = 15.0, height_cm: float = 45.0, px_per_cm: float = 2.5, **kwargs):
@@ -276,25 +286,39 @@ class CabinetItem(BaseFieldItem):
             px_per_cm=px_per_cm,
             color="#8e44ad"
         )
-        self.tape_length_cm = 15.0  # Panjang garis referensi 15 cm
-        self.tape_width_cm = 2.0    # Lebar/ketebalan garis 2 cm
+        self.tier_count = max(1, int(kwargs.get('tier_count', 3)))
+        raw_heights = kwargs.get('tier_heights', [])
+        if isinstance(raw_heights, list) and len(raw_heights) == self.tier_count:
+            self.tier_heights = [max(1.0, float(h)) for h in raw_heights]
+        else:
+            eq_h = self.height_cm / float(self.tier_count)
+            self.tier_heights = [round(eq_h, 1)] * self.tier_count
+
+    def set_tiers(self, count: int, heights: list = None):
+        self.tier_count = max(1, count)
+        if heights and len(heights) == self.tier_count:
+            self.tier_heights = [max(1.0, float(h)) for h in heights]
+        else:
+            eq_h = self.height_cm / float(self.tier_count)
+            self.tier_heights = [round(eq_h, 1)] * self.tier_count
+        # Recalculate total height_cm as sum of tier heights
+        self.height_cm = sum(self.tier_heights)
+        self.prepareGeometryChange()
+        self.update()
 
     def boundingRect(self) -> QRectF:
         cab_w_px = self.width_cm * self.px_per_cm
         cab_h_px = self.height_cm * self.px_per_cm
-        tape_len_px = self.tape_length_cm * self.px_per_cm
-        margin = 6.0
-        return QRectF(-margin, -margin, cab_w_px + tape_len_px + 2*margin, cab_h_px + 2*margin)
+        margin = 4.0
+        return QRectF(-margin, -margin, cab_w_px + 2*margin, cab_h_px + 2*margin)
 
     def paint(self, painter: QPainter, option, widget=None):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         cab_w_px = self.width_cm * self.px_per_cm
         cab_h_px = self.height_cm * self.px_per_cm
-        tape_w_px = self.tape_width_cm * self.px_per_cm    # Lebar/tebal 2 cm
-        tape_l_px = self.tape_length_cm * self.px_per_cm   # Panjang 15 cm
 
-        # 1. Render 15x45 cm Cabinet Main Block
+        # 1. Outer Cabinet Main Block
         cab_rect = QRectF(0, 0, cab_w_px, cab_h_px)
         fill_color = QColor(self.item_color)
         fill_color.setAlpha(200)
@@ -305,17 +329,30 @@ class CabinetItem(BaseFieldItem):
         painter.setBrush(QBrush(fill_color))
         painter.drawRoundedRect(cab_rect, 3.0, 3.0)
 
-        # 2. Render 2x15 cm Solatif Reference Lines in front of 10cm segment midpoints (10cm, 25cm, 40cm)
-        midpoints_cm = [10.0, 25.0, 40.0]
-        painter.setPen(QPen(QColor("#000000"), 1.2))
-        painter.setBrush(QBrush(QColor(30, 30, 30, 230)))  # Dark solatif line
+        # 2. Render Horizontal Shelf Tier Dividers & Labels
+        curr_y_cm = 0.0
+        divider_pen = QPen(QColor("#ffffff"), 1.2, Qt.PenStyle.DashLine)
 
-        for mid_y_cm in midpoints_cm:
-            mid_y_px = mid_y_cm * self.px_per_cm
-            tape_rect = QRectF(cab_w_px, mid_y_px - tape_w_px / 2.0, tape_l_px, tape_w_px)
-            painter.drawRect(tape_rect)
+        for idx, t_h in enumerate(self.tier_heights):
+            # Render shelf divider line at top of tier (except tier 0 top which is outer border)
+            if idx > 0:
+                y_px = curr_y_cm * self.px_per_cm
+                painter.setPen(divider_pen)
+                painter.drawLine(QPointF(2.0, y_px), QPointF(cab_w_px - 2.0, y_px))
 
-        # 4. Selection handles if selected
+            # Tier label / badge inside section
+            y1_px = curr_y_cm * self.px_per_cm
+            y2_px = (curr_y_cm + t_h) * self.px_per_cm
+            tier_rect = QRectF(0, y1_px, cab_w_px, y2_px - y1_px)
+
+            painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+            lbl_str = f"T{idx+1} ({t_h:.0f}cm)"
+            painter.setPen(QPen(QColor("#ffffff")))
+            painter.drawText(tier_rect, Qt.AlignmentFlag.AlignCenter, lbl_str)
+
+            curr_y_cm += t_h
+
+        # Selection handles if selected
         if self.isSelected():
             handle_size = 6
             painter.setBrush(QBrush(QColor("#f1c40f")))
@@ -324,12 +361,14 @@ class CabinetItem(BaseFieldItem):
                 QPointF(0, 0), QPointF(cab_w_px, 0),
                 QPointF(0, cab_h_px), QPointF(cab_w_px, cab_h_px)
             ]
-            for mid_y_cm in midpoints_cm:
-                mid_y_px = mid_y_cm * self.px_per_cm
-                handles.append(QPointF(cab_w_px + tape_l_px, mid_y_px))
-
             for h in handles:
                 painter.drawRect(QRectF(h.x() - handle_size/2, h.y() - handle_size/2, handle_size, handle_size))
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        d['tier_count'] = self.tier_count
+        d['tier_heights'] = [round(h, 1) for h in self.tier_heights]
+        return d
 
 
 class LineItem(RectFieldItem):
@@ -507,7 +546,7 @@ class RobotItem(BaseFieldItem):
                         break
 
                 elif itype == 'stand_cube':
-                    # StandCube solatif tape: 2cm wide x 15cm tall, centered below cube body
+                    # StandCube solatif tape: 2cm wide x tape_length_cm tall, centered below cube body
                     tape_w = getattr(item, 'tape_width_cm', 2.0) * px_per_cm
                     tape_h = getattr(item, 'tape_length_cm', 15.0) * px_per_cm
                     cube_w_px = item.width_cm * px_per_cm
@@ -518,22 +557,6 @@ class RobotItem(BaseFieldItem):
                     if tape_rect.contains(local_pt):
                         detecting = True
                         target_name = getattr(item, 'name', 'Stand Cube') + ' (Solatif)'
-                        break
-
-                elif itype == 'cabinet':
-                    # Cabinet 3 reference lines: 2cm x 15cm at midpoints 10, 25, 40 cm
-                    cab_w_px = item.width_cm * px_per_cm
-                    tape_w_px = getattr(item, 'tape_width_cm', 2.0) * px_per_cm
-                    tape_l_px = getattr(item, 'tape_length_cm', 15.0) * px_per_cm
-                    local_pt = item.mapFromScene(sensor_scene_pt)
-                    for mid_y_cm in [10.0, 25.0, 40.0]:
-                        mid_y_px = mid_y_cm * px_per_cm
-                        tape_rect = QRectF(cab_w_px, mid_y_px - tape_w_px / 2.0, tape_l_px, tape_w_px)
-                        if tape_rect.contains(local_pt):
-                            detecting = True
-                            target_name = getattr(item, 'name', 'Lemari') + ' (Referensi)'
-                            break
-                    if detecting:
                         break
 
             readouts[ls_key] = {'installed': True, 'detecting': detecting, 'target': target_name}

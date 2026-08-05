@@ -78,9 +78,9 @@ Aplikasi GUI desktop berbasis **Python + PyQt6** untuk mendesain layout lapangan
 
 ### 🧱 7. Rintangan Lapangan & YAML Importer/Exporter (`maps.yaml`)
 - **Home Box**: 50x50 cm (putih border hitam tebal dengan aksen inner dash line).
-- **Stand Cube**: 15x15 cm dengan garis solatif vertikal 15x2 cm di depan.
+- **Stand Cube**: Ukuran (lebar & tinggi) dapat disesuaikan bebas, dilengkapi garis solatif vertikal di depan yang panjangnya (`tape_length_cm`) dapat diatur via Inspector.
 - **Tembok (Wall)** & **Garis (Line)**: Lebar 2 cm, panjang & rotasi presisi ($0^\circ, 45^\circ, 90^\circ, 135^\circ$) via tombol preset.
-- **Lemari / Cabinet**: 15x45 cm dengan 3 garis referensi solatif $2 \times 15\text{ cm}$.
+- **Lemari / Cabinet**: Lebar & tinggi dapat disesuaikan bebas **tanpa garis referensi solatif**. Mendukung **Konfigurasi Tingkat/Rak Lemari (Cabinet Tiers)** di mana jumlah tingkat (`tier_count`) dan ketinggian tiap tingkat (`tier_heights`) dapat diatur secara dinamis dan dirender dengan garis sekat visual serta badge label (`T1`, `T2`, dst.).
 - **Export & Import `maps.yaml`**: Menyimpan seluruh susunan lapangan & spesifikasi robot **tanpa menyimpan properti warna (`color`)**, menjaga file YAML tetap bersih dan standar.
 
 ---
