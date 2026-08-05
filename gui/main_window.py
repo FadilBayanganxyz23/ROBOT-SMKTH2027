@@ -4,8 +4,8 @@ Combines Toolbar, Object Palette Sidebar, Settings Panel, Canvas Viewport, and m
 """
 
 import os
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon, QFont, QAction, QColor, QKeySequence
+from PyQt6.QtCore import Qt, QSize, QRectF
+from PyQt6.QtGui import QIcon, QFont, QAction, QColor, QKeySequence, QPainter, QPen, QBrush
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QGroupBox, QLabel, QPushButton, QDoubleSpinBox, QSpinBox,
@@ -22,6 +22,90 @@ from io_handler.map_exporter import (
     export_to_yaml, import_from_yaml,
     export_robot_to_yaml, import_robot_from_yaml
 )
+
+
+class CabinetElevationWidget(QWidget):
+    """
+    Interactive 2D Side-View Elevation Diagram showing vertical shelf levels of Cabinet.
+    Renders stacked tiers with Z-height markers and level labels.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedHeight(125)
+        self.tier_heights = [15.0, 15.0, 15.0]
+
+    def set_tier_data(self, tier_heights: list):
+        self.tier_heights = tier_heights if tier_heights else [15.0, 15.0, 15.0]
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        w = self.width()
+        h = self.height()
+
+        # Dark Background Card
+        painter.fillRect(0, 0, w, h, QColor("#0d1117"))
+        painter.setPen(QPen(QColor("#30363d"), 1))
+        painter.drawRoundedRect(0, 0, w - 1, h - 1, 4.0, 4.0)
+
+        total_cm = sum(self.tier_heights) if self.tier_heights else 45.0
+        if total_cm <= 0:
+            total_cm = 45.0
+
+        # Margins & Drawing Area
+        margin_top = 22
+        margin_bottom = 20
+        margin_left = 65
+        margin_right = 15
+
+        draw_h = h - margin_top - margin_bottom
+        draw_w = w - margin_left - margin_right
+        scale_y = draw_h / float(total_cm)
+
+        # Header Title
+        painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+        painter.setPen(QPen(QColor("#58a6ff")))
+        painter.drawText(8, 15, f"📐 Tampak Samping (Total H: {total_cm:.0f}cm)")
+
+        # Draw Ground Line (Lantai 0cm)
+        ground_y = h - margin_bottom
+        painter.setPen(QPen(QColor("#7f8c8d"), 2))
+        painter.drawLine(margin_left - 15, ground_y, w - 5, ground_y)
+        painter.setFont(QFont("Consolas", 8))
+        painter.setPen(QPen(QColor("#8b949e")))
+        painter.drawText(5, int(ground_y + 4), "Lantai 0cm")
+
+        # Draw Tiers from Bottom to Top
+        curr_z = 0.0
+        tier_colors = ["#8e44ad", "#9b59b6", "#a569bd", "#bb8fce", "#d7bde2"]
+
+        for idx, t_h in enumerate(self.tier_heights):
+            top_z = curr_z + t_h
+            b_y = ground_y - (curr_z * scale_y)
+            t_y = ground_y - (top_z * scale_y)
+            tier_pixel_h = max(2.0, b_y - t_y)
+
+            color = QColor(tier_colors[idx % len(tier_colors)])
+            painter.setPen(QPen(QColor("#ffffff"), 1.0))
+            painter.setBrush(QBrush(color))
+            box_rect = QRectF(margin_left, t_y, draw_w, tier_pixel_h)
+            painter.drawRoundedRect(box_rect, 2.0, 2.0)
+
+            # Label inside box if space permits
+            if tier_pixel_h >= 10:
+                painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+                lbl_str = f"Tingkat {idx+1} ({t_h:.0f}cm)"
+                painter.setPen(QPen(QColor("#ffffff")))
+                painter.drawText(box_rect, Qt.AlignmentFlag.AlignCenter, lbl_str)
+
+            # Z-height marker on left
+            painter.setPen(QPen(QColor("#58a6ff")))
+            painter.setFont(QFont("Consolas", 8))
+            painter.drawText(5, int(t_y + 4), f"{top_z:.0f}cm")
+
+            curr_z = top_z
 
 
 class MainWindow(QMainWindow):
@@ -1048,10 +1132,10 @@ class MainWindow(QMainWindow):
         self.lbl_tape_len.hide()
         self.spn_tape_len.hide()
 
-        # Cabinet Tier Count [Dynamic]
+        # Cabinet Tier Count & Per-Tier Height SpinBoxes [Dynamic]
         self.lbl_tier_count = QLabel("Jumlah Tingkat:")
         self.spn_tier_count = QSpinBox()
-        self.spn_tier_count.setRange(1, 10)
+        self.spn_tier_count.setRange(1, 5)
         self.spn_tier_count.setValue(3)
         self.spn_tier_count.setEnabled(False)
         self.spn_tier_count.valueChanged.connect(self.on_inspector_changed)
@@ -1059,6 +1143,27 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.spn_tier_count, 7, 1)
         self.lbl_tier_count.hide()
         self.spn_tier_count.hide()
+
+        # Per-Tier Height SpinBoxes (Up to 5 Tiers)
+        self.tier_h_widgets = []
+        for i in range(5):
+            lbl_t = QLabel(f"Tinggi Tingkat {i+1} (cm):")
+            spn_t = QDoubleSpinBox()
+            spn_t.setRange(1.0, 200.0)
+            spn_t.setSingleStep(1.0)
+            spn_t.setValue(15.0)
+            spn_t.setEnabled(False)
+            spn_t.valueChanged.connect(self.on_inspector_changed)
+            grid.addWidget(lbl_t, 8 + i, 0)
+            grid.addWidget(spn_t, 8 + i, 1)
+            lbl_t.hide()
+            spn_t.hide()
+            self.tier_h_widgets.append((lbl_t, spn_t))
+
+        # Side Elevation Diagram Widget
+        self.cab_elevation_widget = CabinetElevationWidget()
+        grid.addWidget(self.cab_elevation_widget, 13, 0, 1, 2)
+        self.cab_elevation_widget.hide()
 
         # Quick Preset Rotation Buttons (Horizontal / Vertikal / Miring)
         rot_box = QHBoxLayout()
@@ -1068,14 +1173,14 @@ class MainWindow(QMainWindow):
             btn_r.setStyleSheet("padding: 4px; font-size: 11px;")
             btn_r.clicked.connect(lambda checked, a=angle: self.set_item_rotation_preset(a))
             rot_box.addWidget(btn_r)
-        grid.addLayout(rot_box, 8, 0, 1, 2)
+        grid.addLayout(rot_box, 14, 0, 1, 2)
 
         # Delete Item Button
         self.btn_delete_item = QPushButton("🗑️ Hapus Objek")
         self.btn_delete_item.setObjectName("dangerBtn")
         self.btn_delete_item.setEnabled(False)
         self.btn_delete_item.clicked.connect(self.delete_selected_item)
-        grid.addWidget(self.btn_delete_item, 9, 0, 1, 2)
+        grid.addWidget(self.btn_delete_item, 15, 0, 1, 2)
 
         return box
 
@@ -1239,6 +1344,8 @@ class MainWindow(QMainWindow):
         self.spn_item_rot.blockSignals(True)
         self.spn_tape_len.blockSignals(True)
         self.spn_tier_count.blockSignals(True)
+        for lbl_t, spn_t in self.tier_h_widgets:
+            spn_t.blockSignals(True)
 
         self.spn_item_x.setValue(item.get_x_cm())
         self.spn_item_y.setValue(item.get_y_cm())
@@ -1254,11 +1361,34 @@ class MainWindow(QMainWindow):
             self.lbl_tier_count.hide()
             self.spn_tier_count.hide()
             self.spn_tier_count.setEnabled(False)
+            for lbl_t, spn_t in self.tier_h_widgets:
+                lbl_t.hide()
+                spn_t.hide()
+                spn_t.setEnabled(False)
+            self.cab_elevation_widget.hide()
         elif item.item_type == 'cabinet':
             self.lbl_tier_count.show()
             self.spn_tier_count.show()
             self.spn_tier_count.setEnabled(True)
-            self.spn_tier_count.setValue(getattr(item, 'tier_count', 3))
+            t_cnt = getattr(item, 'tier_count', 3)
+            t_hts = getattr(item, 'tier_heights', [15.0] * t_cnt)
+            self.spn_tier_count.setValue(t_cnt)
+
+            for idx, (lbl_t, spn_t) in enumerate(self.tier_h_widgets):
+                if idx < t_cnt:
+                    lbl_t.show()
+                    spn_t.show()
+                    spn_t.setEnabled(True)
+                    val = t_hts[idx] if idx < len(t_hts) else 15.0
+                    spn_t.setValue(val)
+                else:
+                    lbl_t.hide()
+                    spn_t.hide()
+                    spn_t.setEnabled(False)
+
+            self.cab_elevation_widget.show()
+            self.cab_elevation_widget.set_tier_data(t_hts)
+
             self.lbl_tape_len.hide()
             self.spn_tape_len.hide()
             self.spn_tape_len.setEnabled(False)
@@ -1269,6 +1399,11 @@ class MainWindow(QMainWindow):
             self.lbl_tier_count.hide()
             self.spn_tier_count.hide()
             self.spn_tier_count.setEnabled(False)
+            for lbl_t, spn_t in self.tier_h_widgets:
+                lbl_t.hide()
+                spn_t.hide()
+                spn_t.setEnabled(False)
+            self.cab_elevation_widget.hide()
 
         self.spn_item_x.blockSignals(False)
         self.spn_item_y.blockSignals(False)
@@ -1277,6 +1412,8 @@ class MainWindow(QMainWindow):
         self.spn_item_rot.blockSignals(False)
         self.spn_tape_len.blockSignals(False)
         self.spn_tier_count.blockSignals(False)
+        for lbl_t, spn_t in self.tier_h_widgets:
+            spn_t.blockSignals(False)
 
         self.spn_item_x.setEnabled(True)
         self.spn_item_y.setEnabled(True)
@@ -1298,6 +1435,11 @@ class MainWindow(QMainWindow):
         self.spn_tape_len.hide()
         self.lbl_tier_count.hide()
         self.spn_tier_count.hide()
+        for lbl_t, spn_t in self.tier_h_widgets:
+            lbl_t.hide()
+            spn_t.hide()
+            spn_t.setEnabled(False)
+        self.cab_elevation_widget.hide()
         self.btn_delete_item.setEnabled(False)
 
     def on_inspector_changed(self):
@@ -1320,11 +1462,22 @@ class MainWindow(QMainWindow):
                 item.set_tape_length(self.spn_tape_len.value())
         elif item.item_type == 'cabinet':
             if hasattr(item, 'set_tiers'):
-                # When tier_count changes, set_tiers updates height_cm as well
-                item.set_tiers(self.spn_tier_count.value())
-                self.spn_item_h.blockSignals(True)
-                self.spn_item_h.setValue(item.height_cm)
-                self.spn_item_h.blockSignals(False)
+                t_cnt = self.spn_tier_count.value()
+                t_hts = [spn_t.value() for idx, (lbl_t, spn_t) in enumerate(self.tier_h_widgets) if idx < t_cnt]
+                item.set_tiers(t_cnt, t_hts)
+
+                # Refresh UI SpinBoxes visibility & elevation diagram
+                for idx, (lbl_t, spn_t) in enumerate(self.tier_h_widgets):
+                    if idx < t_cnt:
+                        lbl_t.show()
+                        spn_t.show()
+                        spn_t.setEnabled(True)
+                    else:
+                        lbl_t.hide()
+                        spn_t.hide()
+                        spn_t.setEnabled(False)
+
+                self.cab_elevation_widget.set_tier_data(item.tier_heights)
 
         item.prepareGeometryChange()
         item.update()

@@ -294,15 +294,15 @@ class CabinetItem(BaseFieldItem):
             eq_h = self.height_cm / float(self.tier_count)
             self.tier_heights = [round(eq_h, 1)] * self.tier_count
 
+    def get_total_height_cm(self) -> float:
+        return sum(self.tier_heights) if self.tier_heights else 45.0
+
     def set_tiers(self, count: int, heights: list = None):
         self.tier_count = max(1, count)
         if heights and len(heights) == self.tier_count:
             self.tier_heights = [max(1.0, float(h)) for h in heights]
         else:
-            eq_h = self.height_cm / float(self.tier_count)
-            self.tier_heights = [round(eq_h, 1)] * self.tier_count
-        # Recalculate total height_cm as sum of tier heights
-        self.height_cm = sum(self.tier_heights)
+            self.tier_heights = [15.0] * self.tier_count
         self.prepareGeometryChange()
         self.update()
 
@@ -318,39 +318,31 @@ class CabinetItem(BaseFieldItem):
         cab_w_px = self.width_cm * self.px_per_cm
         cab_h_px = self.height_cm * self.px_per_cm
 
-        # 1. Outer Cabinet Main Block
+        # 1. Outer Cabinet Main Block (Top-Down Footprint)
         cab_rect = QRectF(0, 0, cab_w_px, cab_h_px)
         fill_color = QColor(self.item_color)
-        fill_color.setAlpha(200)
+        fill_color.setAlpha(220)
         pen_color = QColor("#f1c40f") if self.isSelected() else QColor(self.item_color).lighter(130)
         pen_width = 3.5 if self.isSelected() else 2.0
 
         painter.setPen(QPen(pen_color, pen_width))
         painter.setBrush(QBrush(fill_color))
-        painter.drawRoundedRect(cab_rect, 3.0, 3.0)
+        painter.drawRoundedRect(cab_rect, 4.0, 4.0)
 
-        # 2. Render Horizontal Shelf Tier Dividers & Labels
-        curr_y_cm = 0.0
-        divider_pen = QPen(QColor("#ffffff"), 1.2, Qt.PenStyle.DashLine)
+        # 2. Inner Door / Top Rim Accent Detail
+        inner_margin = 3.0
+        if cab_w_px > 2 * inner_margin and cab_h_px > 2 * inner_margin:
+            inner_rect = QRectF(inner_margin, inner_margin, cab_w_px - 2*inner_margin, cab_h_px - 2*inner_margin)
+            painter.setPen(QPen(QColor("#ffffff"), 1.0, Qt.PenStyle.DotLine))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRoundedRect(inner_rect, 2.0, 2.0)
 
-        for idx, t_h in enumerate(self.tier_heights):
-            # Render shelf divider line at top of tier (except tier 0 top which is outer border)
-            if idx > 0:
-                y_px = curr_y_cm * self.px_per_cm
-                painter.setPen(divider_pen)
-                painter.drawLine(QPointF(2.0, y_px), QPointF(cab_w_px - 2.0, y_px))
-
-            # Tier label / badge inside section
-            y1_px = curr_y_cm * self.px_per_cm
-            y2_px = (curr_y_cm + t_h) * self.px_per_cm
-            tier_rect = QRectF(0, y1_px, cab_w_px, y2_px - y1_px)
-
-            painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
-            lbl_str = f"T{idx+1} ({t_h:.0f}cm)"
-            painter.setPen(QPen(QColor("#ffffff")))
-            painter.drawText(tier_rect, Qt.AlignmentFlag.AlignCenter, lbl_str)
-
-            curr_y_cm += t_h
+        # 3. Center Label Badge: 🗄️ Lemari (N Tingkat | H=XXcm)
+        tot_h = self.get_total_height_cm()
+        lbl_str = f"🗄️ {self.name}\n({self.tier_count} Tingkat | H={tot_h:.0f}cm)"
+        painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+        painter.setPen(QPen(QColor("#ffffff")))
+        painter.drawText(cab_rect, Qt.AlignmentFlag.AlignCenter, lbl_str)
 
         # Selection handles if selected
         if self.isSelected():
