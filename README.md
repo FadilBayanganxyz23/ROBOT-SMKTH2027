@@ -4,91 +4,98 @@ Aplikasi GUI desktop berbasis **Python + PyQt6** untuk mendesain layout lapangan
 
 ---
 
-## ✅ Fitur yang Telah Dikerjakan
+## ✅ Fitur & Pembaruan Terkini
 
 ### 🏟️ GUI Lapangan
-- Canvas lapangan putih dengan border hitam tebal
+- Canvas permukaan lapangan putih bersih dengan border hitam tebal
 - Grid overlay dengan ukuran grid yang dapat diatur (default 10 cm)
-- Ruler/mistar sumbu X & Y dalam satuan cm
-- Zoom in/out (Ctrl + Scroll) dan Fit View
+- Ruler/mistar sumbu X & Y dalam satuan cm dengan titik asal `(0,0)`
+- Zoom in/out (`Ctrl` + Scroll), Panning, dan Fit View
 - Dark mode UI modern
 
-### 🤖 Robot
-- Robot dengan bentuk polygon yang dapat dikonfigurasi (3-36 sisi)
+### 🤖 Robot (Default Oval)
+- Robot secara default berbentuk **Oval / Ellipse** yang mulus
 - Diameter robot dapat diatur dalam cm
-- Indikator arah heading (panah kuning)
-- Robot selalu berada di atas semua objek (Z-layer tertinggi)
-- Pergerakan robot tidak terikat grid (free movement)
+- Indikator arah heading (panah kuning) dan titik pusat (center dot)
+- Robot **selalu berada di atas semua objek** (Z-layer teratas / ZValue = 100)
+- Pergerakan robot tidak terikat grid (*unconstrained free movement*)
+
+### 📍 Peletakan Objek Bebas & Berbagai Ukuran
+- Objek (Stand Cube, Lemari, Tembok, Garis, Home Box) dapat diletakkan **di mana saja** termasuk di tengah-tengah sel grid
+- Posisi ($X, Y$), Ukuran ($W, H$), dan Rotasi ($0^\circ-360^\circ$) seluruh objek dapat disesuaikan secara bebas via *Inspector Panel*
 
 ### 📦 Stand Cube
-- Ukuran 15x15 cm
-- Dilengkapi garis solatif vertikal 15x2 cm di depan cube
+- Ukuran default 15x15 cm (dapat disesuaikan)
+- Dilengkapi garis solatif vertikal 15x2 cm di bagian depan cube
 - Dapat di-drag dan diputar bebas
 
-### 🧱 Tembok (Wall)
-- Lebar/ketebalan 2 cm, panjang dapat disesuaikan
-- Rotasi bebas di berbagai derajat (0°, 45°, 90°, 135°, dll)
+### 🧱 Tembok (Wall) & 📏 Garis Lapangan
+- Lebar/ketebalan 2 cm, panjang dan rotasi dapat disesuaikan bebas
+- Rotasi presisi ($0^\circ, 45^\circ, 90^\circ, 135^\circ$) via tombol preset atau spinbox
 
-### 📏 Garis Lapangan
-- Ukuran sama dengan tembok (lebar 2 cm, panjang adjustable)
-- Rotasi bebas
+### 🏠 Home Box & 🗄️ Lemari / Cabinet
+- Home Box 50x50 cm (kotak putih border hitam tebal dengan aksen inner dash line)
+- Lemari / Cabinet (default 40x60 cm, dapat disesuaikan)
 
-### 🏠 Home Box
-- Ukuran 50x50 cm
-- Kotak putih dengan pinggiran hitam tebal
+### 💾 YAML Importer / Exporter (`maps.yaml`)
+- Export & Import layout lapangan dari/ke file `maps.yaml`
+- **Tanpa menyimpan warna (`color`)**, membuat isi file YAML lebih bersih dan ringkas
+- Menjaga semua konfigurasi dimensi field, grid, robot, dan objek-objek
 
-### 🗄️ Lemari / Cabinet
-- Ukuran default 40x60 cm, dapat disesuaikan
-
-### 💾 YAML (maps.yaml)
-- Export layout lapangan ke file `maps.yaml`
-- Import/load layout dari file `maps.yaml`
-- Menyimpan semua konfigurasi: field, grid, robot, dan objek-objek
-
-### ⌨️ Keyboard Shortcuts
+### ⌨️ Keyboard Shortcuts Global
 - `Delete` / `Backspace` → Hapus objek terpilih
-- `Ctrl+S` → Simpan ke maps.yaml
-- `Ctrl+C` → Copy objek terpilih
-- `Ctrl+V` → Paste objek
-- `Ctrl+N` → Buat layout baru (reset)
-- `Ctrl+O` → Buka file maps.yaml
+- `Ctrl + S` → Simpan layout ke `maps.yaml`
+- `Ctrl + C` → Copy objek terpilih
+- `Ctrl + V` → Paste objek hasil copy
+- `Ctrl + N` → Buat layout baru (reset)
+- `Ctrl + O` → Buka file `maps.yaml`
 
 ---
 
-## 📁 Struktur Folder
+## 📁 Struktur Folder Proyek
 
 ```
 Lapangan/
-├── main.py                  ← Entry point
+├── main.py                  ← Entry point launcher aplikasi
 ├── requirements.txt         ← Dependencies (PyQt6, PyYAML)
 ├── maps.yaml                ← File peta tersimpan
-├── core/                    ← Logika inti
-│   ├── field_items.py       ← Kelas item (HomeBox, StandCube, Wall, dll)
-│   └── field_canvas.py      ← FieldScene & FieldView (canvas, grid, ruler)
-├── gui/                     ← Antarmuka pengguna
-│   └── main_window.py       ← MainWindow (toolbar, sidebar, inspector)
+├── core/                    ← Logika inti & graphics items
+│   ├── field_items.py       ← Objek grafis (HomeBox, StandCube, Wall, Line, Cabinet, Robot)
+│   └── field_canvas.py      ← FieldScene & FieldView (canvas, grid, ruler, zoom)
+├── gui/                     ← Antarmuka pengguna (UI)
+│   └── main_window.py       ← MainWindow (toolbar, sidebar palette, inspector)
 ├── io_handler/              ← Input/Output
-│   └── map_exporter.py      ← Export & Import YAML
-└── tests/                   ← Unit test
-    ├── test_core.py          ← Tes YAML export/import
+│   └── map_exporter.py      ← Parser Import & Export YAML
+└── tests/                   ← Unit test suite
+    ├── test_core.py          ← Tes ekspor & impor YAML
     └── test_app.py           ← Tes integrasi GUI
 ```
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🚀 Cara Menjalankan Aplikasi
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# Jalankan aplikasi
+# 2. Jalankan aplikasi
 python main.py
+```
+
+### 🧪 Menjalankan Test Suite
+
+```bash
+# Run core logic tests
+python -m tests.test_core
+
+# Run GUI integration tests
+python -X utf8 -m tests.test_app
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 - **Python 3.10+**
-- **PyQt6** - GUI Framework
-- **PyYAML** - YAML parser
+- **PyQt6** - GUI Framework & Graphics View System
+- **PyYAML** - YAML file handler
