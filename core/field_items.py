@@ -401,11 +401,26 @@ class RobotItem(BaseFieldItem):
         if 'sensors' in kwargs and isinstance(kwargs['sensors'], dict):
             self.set_sensors(kwargs['sensors'])
 
+        # Omni-wheel Configuration: count (3 or 4), diameter_mm (50 or 100)
+        wheels_cfg = kwargs.get('wheels', {})
+        if isinstance(wheels_cfg, dict):
+            self.wheel_count = wheels_cfg.get('count', 4)
+            self.wheel_diameter_mm = wheels_cfg.get('diameter_mm', 100)
+        else:
+            self.wheel_count = 4
+            self.wheel_diameter_mm = 100
+
     def set_sensors(self, sensors_dict: dict):
         if sensors_dict:
             for k in self.sensors:
                 if k in sensors_dict:
                     self.sensors[k] = sensors_dict[k]
+        self.update()
+
+    def set_wheel_config(self, count: int, diameter_mm: int):
+        self.wheel_count = 4 if count == 4 else 3
+        self.wheel_diameter_mm = 100 if diameter_mm == 100 else 50
+        self.prepareGeometryChange()
         self.update()
 
     def set_shape_params(self, diameter_cm: float, color: str = None):
@@ -565,7 +580,47 @@ class RobotItem(BaseFieldItem):
         painter.setBrush(QBrush(fill_color))
         painter.drawPath(path)
 
-        # 2. Render 7 Sensors on Robot Boundary
+        # 1.5. Render Omni Wheels (3 or 4 Omni Wheels on Robot Perimeter)
+        w_diam_cm = self.wheel_diameter_mm / 10.0  # 10 cm or 5 cm
+        w_len_px = w_diam_cm * self.px_per_cm
+        w_width_px = max(4.0, w_len_px * 0.38)
+
+        wheel_angles = [45.0, 135.0, -135.0, -45.0] if self.wheel_count == 4 else [0.0, 120.0, -120.0]
+
+        for angle_deg in wheel_angles:
+            rad = math.radians(angle_deg - 90.0)
+            xs = r_px * math.cos(rad)
+            ys = r_px * math.sin(rad)
+
+            painter.save()
+            painter.translate(xs, ys)
+            painter.rotate(angle_deg)
+
+            # Wheel Rim Chassis Block
+            wheel_rect = QRectF(-w_width_px / 2.0, -w_len_px / 2.0, w_width_px, w_len_px)
+            painter.setPen(QPen(QColor("#2d3436"), 1.2))
+            painter.setBrush(QBrush(QColor("#353b48")))
+            painter.drawRoundedRect(wheel_rect, 2.0, 2.0)
+
+            # Metallic Axle Pin
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QBrush(QColor("#718093")))
+            painter.drawRect(QRectF(-w_width_px * 0.7, -2.0, w_width_px * 1.4, 4.0))
+
+            # Omni Sub-Rollers (Mini Rollers along Rim Edge)
+            num_rollers = 4 if self.wheel_diameter_mm == 100 else 3
+            roller_h = w_len_px / (num_rollers * 1.35)
+            painter.setPen(QPen(QColor("#1e272e"), 0.8))
+            painter.setBrush(QBrush(QColor("#e1b12c")))
+
+            for i in range(num_rollers):
+                ry = -w_len_px / 2.0 + (i + 0.25) * (w_len_px / num_rollers)
+                painter.drawRoundedRect(QRectF(-w_width_px / 2.0 - 1.5, ry, 2.5, roller_h), 1, 1)
+                painter.drawRoundedRect(QRectF(w_width_px / 2.0 - 1.0, ry, 2.5, roller_h), 1, 1)
+
+            painter.restore()
+
+        # 2. Render 9 Sensors on Robot Boundary
         for pos_key, cfg in self.SENSOR_CONFIGS.items():
             stype = self.sensors.get(pos_key, 'none')
             xs = cfg['rel_x'] * r_px
@@ -690,9 +745,14 @@ class RobotItem(BaseFieldItem):
         return {
             'type': self.item_type,
             'name': self.name,
+            'shape': 'oval',
             'x_cm': round(self.get_x_cm(), 2),
             'y_cm': round(self.get_y_cm(), 2),
             'diameter_cm': round(self.diameter_cm, 2),
             'rotation_deg': round(self.rotation(), 2),
+            'wheels': {
+                'count': self.wheel_count,
+                'diameter_mm': self.wheel_diameter_mm
+            },
             'sensors': self.sensors.copy()
         }

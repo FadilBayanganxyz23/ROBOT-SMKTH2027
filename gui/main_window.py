@@ -425,13 +425,38 @@ class MainWindow(QMainWindow):
         self.lbl_robot_pos.setObjectName("highlightVal")
         grid.addWidget(self.lbl_robot_pos, 3, 0, 1, 2)
 
+        # --- Omni Wheel Configuration Panel ---
+        lbl_wheels_title = QLabel("⚙️ Konfigurasi Roda Omni Robot:")
+        lbl_wheels_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 6px;")
+        grid.addWidget(lbl_wheels_title, 4, 0, 1, 2)
+
+        # Omni Wheel Mode (4 Omni vs 3 Omni)
+        grid.addWidget(QLabel("Mode Roda Omni:"), 5, 0)
+        self.cb_wheel_mode = QComboBox()
+        self.cb_wheel_mode.addItems([
+            "⚙️ 4 Roda Omni (4-Omni Drive)",
+            "⚙️ 3 Roda Omni (3-Omni Drive)"
+        ])
+        self.cb_wheel_mode.currentIndexChanged.connect(self.on_wheel_config_changed)
+        grid.addWidget(self.cb_wheel_mode, 5, 1)
+
+        # Omni Wheel Diameter (100mm vs 50mm)
+        grid.addWidget(QLabel("Diameter Roda:"), 6, 0)
+        self.cb_wheel_diam = QComboBox()
+        self.cb_wheel_diam.addItems([
+            "⭕ 100 mm (10 cm)",
+            "⭕ 50 mm (5 cm)"
+        ])
+        self.cb_wheel_diam.currentIndexChanged.connect(self.on_wheel_config_changed)
+        grid.addWidget(self.cb_wheel_diam, 6, 1)
+
         # --- Simplified 9 Sensor Configuration Panel ---
         lbl_sensors_title = QLabel("📡 Konfigurasi Sensor Robot:")
         lbl_sensors_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 8px;")
-        grid.addWidget(lbl_sensors_title, 4, 0, 1, 2)
+        grid.addWidget(lbl_sensors_title, 7, 0, 1, 2)
 
         # Dropdown 1: Select Sensor Position
-        grid.addWidget(QLabel("Pilih Posisi Sensor:"), 5, 0)
+        grid.addWidget(QLabel("Pilih Posisi Sensor:"), 8, 0)
         self.cb_sensor_pos = QComboBox()
         self.sensor_pos_keys = [
             ('front_left', '📍 Depan Kiri'),
@@ -447,10 +472,10 @@ class MainWindow(QMainWindow):
         for key, label_str in self.sensor_pos_keys:
             self.cb_sensor_pos.addItem(label_str, userData=key)
         self.cb_sensor_pos.currentIndexChanged.connect(self.on_sensor_pos_changed)
-        grid.addWidget(self.cb_sensor_pos, 5, 1)
+        grid.addWidget(self.cb_sensor_pos, 8, 1)
 
         # Dropdown 2: Select Installed Sensor Type
-        grid.addWidget(QLabel("Pasang Sensor:"), 6, 0)
+        grid.addWidget(QLabel("Pasang Sensor:"), 9, 0)
         self.cb_sensor_type = QComboBox()
         self.cb_sensor_type.addItems([
             "❌ Tidak Dipasang",
@@ -458,15 +483,14 @@ class MainWindow(QMainWindow):
             "🔴 Infrared (IR)"
         ])
         self.cb_sensor_type.currentIndexChanged.connect(self.on_sensor_type_changed)
-        grid.addWidget(self.cb_sensor_type, 6, 1)
+        grid.addWidget(self.cb_sensor_type, 9, 1)
 
         # Live Sensor Status & Readout Summary
         lbl_summary_title = QLabel("📊 Status & Hasil Ukur Sensor:")
         lbl_summary_title.setStyleSheet("font-weight: bold; color: #58a6ff; margin-top: 8px;")
-        grid.addWidget(lbl_summary_title, 7, 0, 1, 2)
+        grid.addWidget(lbl_summary_title, 10, 0, 1, 2)
 
         self.sensor_summary_labels = {}
-        row = 8
         st_layout = QVBoxLayout()
         st_layout.setSpacing(3)
 
@@ -476,7 +500,7 @@ class MainWindow(QMainWindow):
             st_layout.addWidget(lbl)
             self.sensor_summary_labels[key] = (label_str, lbl)
 
-        grid.addLayout(st_layout, 8, 0, 1, 2)
+        grid.addLayout(st_layout, 11, 0, 1, 2)
 
         # Robot YAML Export & Import Action Buttons
         btn_robot_save = QPushButton("💾 Simpan Robot (YAML)")
@@ -491,9 +515,18 @@ class MainWindow(QMainWindow):
         btn_row.setSpacing(6)
         btn_row.addWidget(btn_robot_save)
         btn_row.addWidget(btn_robot_load)
-        grid.addLayout(btn_row, 9, 0, 1, 2)
+        grid.addLayout(btn_row, 12, 0, 1, 2)
 
         return box
+
+    def on_wheel_config_changed(self):
+        """Triggered when user changes Omni wheel mode or wheel diameter."""
+        if not hasattr(self, 'robot_item') or not self.robot_item:
+            return
+        count = 4 if self.cb_wheel_mode.currentIndex() == 0 else 3
+        diameter_mm = 100 if self.cb_wheel_diam.currentIndex() == 0 else 50
+        self.robot_item.set_wheel_config(count, diameter_mm)
+        self.scene.update()
 
     def export_robot_yaml(self):
         """Export current robot configuration and sensors to robot.yaml."""
@@ -531,6 +564,9 @@ class MainWindow(QMainWindow):
                     diam = r_cfg.get('diameter_cm', 30.0)
                     rot = r_cfg.get('rotation_deg', 0.0)
                     sensors_cfg = r_cfg.get('sensors', {})
+                    w_cfg = r_cfg.get('wheels', {})
+                    w_count = w_cfg.get('count', 4)
+                    w_diam = w_cfg.get('diameter_mm', 100)
                     x_cm = r_cfg.get('x_cm', self.robot_item.get_x_cm())
                     y_cm = r_cfg.get('y_cm', self.robot_item.get_y_cm())
 
@@ -541,6 +577,15 @@ class MainWindow(QMainWindow):
                     self.robot_item.set_y_cm(y_cm)
                     self.robot_item.setRotation(rot)
                     self.robot_item.set_sensors(sensors_cfg)
+                    self.robot_item.set_wheel_config(w_count, w_diam)
+
+                    self.cb_wheel_mode.blockSignals(True)
+                    self.cb_wheel_mode.setCurrentIndex(0 if w_count == 4 else 1)
+                    self.cb_wheel_mode.blockSignals(False)
+
+                    self.cb_wheel_diam.blockSignals(True)
+                    self.cb_wheel_diam.setCurrentIndex(0 if w_diam == 100 else 1)
+                    self.cb_wheel_diam.blockSignals(False)
 
                     self.on_sensor_pos_changed(self.cb_sensor_pos.currentIndex())
                     self.update_robot_pos_label()
@@ -1070,20 +1115,33 @@ class MainWindow(QMainWindow):
         if r_cfg:
             self.spn_robot_diam.setValue(r_cfg.get('diameter_cm', 30.0))
             sensors_cfg = r_cfg.get('sensors', {})
+            wheels_cfg = r_cfg.get('wheels', {})
+            w_count = wheels_cfg.get('count', 4)
+            w_diam = wheels_cfg.get('diameter_mm', 100)
+
             self.robot_item = RobotItem(
                 x_cm=r_cfg.get('x_cm', 100.0),
                 y_cm=r_cfg.get('y_cm', 50.0),
                 diameter_cm=r_cfg.get('diameter_cm', 30.0),
                 px_per_cm=self.scene.px_per_cm,
                 color=r_cfg.get('color', '#e74c3c'),
-                sensors=sensors_cfg
+                sensors=sensors_cfg,
+                wheels=wheels_cfg
             )
             self.robot_item.setRotation(r_cfg.get('rotation_deg', 0.0))
             self.connect_item_signals(self.robot_item)
             self.scene.addItem(self.robot_item)
             self.spn_robot_rot.setValue(r_cfg.get('rotation_deg', 0.0))
 
-            # Update UI dropdown & live readouts
+            # Update UI dropdowns & live readouts
+            self.cb_wheel_mode.blockSignals(True)
+            self.cb_wheel_mode.setCurrentIndex(0 if w_count == 4 else 1)
+            self.cb_wheel_mode.blockSignals(False)
+
+            self.cb_wheel_diam.blockSignals(True)
+            self.cb_wheel_diam.setCurrentIndex(0 if w_diam == 100 else 1)
+            self.cb_wheel_diam.blockSignals(False)
+
             self.on_sensor_pos_changed(self.cb_sensor_pos.currentIndex())
             self.update_sensor_readouts_ui()
 
