@@ -337,13 +337,6 @@ class CabinetItem(BaseFieldItem):
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRoundedRect(inner_rect, 2.0, 2.0)
 
-        # 3. Center Label Badge: 🗄️ Lemari (N Tingkat | H=XXcm)
-        tot_h = self.get_total_height_cm()
-        lbl_str = f"🗄️ {self.name}\n({self.tier_count} Tingkat | H={tot_h:.0f}cm)"
-        painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
-        painter.setPen(QPen(QColor("#ffffff")))
-        painter.drawText(cab_rect, Qt.AlignmentFlag.AlignCenter, lbl_str)
-
         # Selection handles if selected
         if self.isSelected():
             handle_size = 6
